@@ -1,0 +1,13 @@
+# run inside of powershell 
+
+# first i have to allow script execution in the powershell 
+
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+# to exit crtl+c
+
+# to change back for safety use this
+
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy Restricted
+
+
