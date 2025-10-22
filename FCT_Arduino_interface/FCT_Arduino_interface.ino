@@ -20,15 +20,17 @@
 #define DEL_X 0x03
 #define DEL_Y 0x04
 #define OP_MODE 0x05
-#define CONF 0x06
+// #define CONF 0x06
 #define IMG_QUALITY 0x07
-#define OP_STATE 0x08
-#define W_PROTECT 0x09
-#define SLEEP1_SET 0x0A
-#define ENTER_TIME 0x0B
-#define SLEEP2_SET 0x0C
+// #define OP_STATE 0x08
+// #define W_PROTECT 0x09
+// #define SLEEP1_SET 0x0A
+// #define ENTER_TIME 0x0B
+// #define SLEEP2_SET 0x0C
 #define IMG_THRESHOLD 0x0D
 #define IMG_RECOG 0x0E
+
+#define IMG_BRIGHT 0x17
 
 #define DEBUG false
 
@@ -66,6 +68,10 @@ void loop() {
     Serial.print(",");
     if (DEBUG) Serial.print(" delta Y:");
     Serial.println(delta_y);  
+    contactDectect();
+  }
+  else{
+    contactDectect();
   }
   delay(50); // leo lowered from 1s delay to 100ms
 }
@@ -131,9 +137,23 @@ void writeRegister(byte address, byte data) {
   delayMicroseconds(100);
 }
 
+// leos stuff
 void printMode(void){
   uint8_t mode = readRegister(OP_MODE);
   Serial.print("\nmode: 0x");
   Serial.println(mode, HEX);
+}
+
+void contactDectect(void){
+  uint8_t bright = readRegister(IMG_BRIGHT); // whith 0xA as a theshhold it doesnt detect "no contact" with bright surfaces 
+  uint8_t quali = readRegister(IMG_QUALITY); // detects no contact at a distance of about 1 cm with == 0x00
+  uint8_t thresh = readRegister(IMG_THRESHOLD);
+  uint8_t recog = readRegister(IMG_RECOG);
+  
+  Serial.print("\nthreshhold: 0x");
+  Serial.println(thresh, HEX);
+  if (quali == 0x00){ // detects no contact at a distance of about 1 cm
+    Serial.println("no contact");
+  }
 }
 
