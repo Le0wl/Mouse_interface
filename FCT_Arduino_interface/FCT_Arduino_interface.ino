@@ -12,6 +12,8 @@
  * Adaptations: Leonie Gasser
  * Date: 22 October 2025
  */
+ 
+ // figure out what the max pulling rate is
 
 //Register Addresses from datasheet
 #define PROD_ID1 0x00
@@ -33,6 +35,8 @@
 #define IMG_BRIGHT 0x17
 
 #define DEBUG false
+#define PLOT_HERE false
+
 
 const int SCLK = 8;
 const int SDIO = 4;
@@ -59,21 +63,21 @@ void loop() {
       Serial.print("\nBad connection");
       printMode();
     }
-  else if (motion & 0x80){ //new test for moved used to be "if(motion==0x81)"
-    if (DEBUG) Serial.print("\nMoved!");
+  else { //new test for moved used to be "if(motion==0x81)"
+    if (DEBUG){
+      if (motion & 0x80) Serial.print("\nMoved!");
+      else Serial.print("\nno mouvement");
+    }
     int8_t delta_x =(int8_t) readRegister(DEL_X); // read delta x register | leo thinks it's signed ints
     int8_t delta_y = (int8_t) readRegister(DEL_Y); // read delta y register
-    if (DEBUG) Serial.print("\n delta X:");
+    if (DEBUG || PLOT_HERE) Serial.print("\n delta X:");
     Serial.print(delta_x);
     Serial.print(",");
-    if (DEBUG) Serial.print(" delta Y:");
+    if (DEBUG || PLOT_HERE) Serial.print(" delta Y:");
     Serial.println(delta_y);  
     contactDectect();
   }
-  else{
-    contactDectect();
-  }
-  delay(50); // leo lowered from 1s delay to 100ms
+  // delay(20); // seems stable at 20ms
 }
 
 void mouseInit(void) // function to initialize optical sensor.
@@ -145,15 +149,12 @@ void printMode(void){
 }
 
 void contactDectect(void){
-  uint8_t bright = readRegister(IMG_BRIGHT); // whith 0xA as a theshhold it doesnt detect "no contact" with bright surfaces 
+  // uint8_t bright = readRegister(IMG_BRIGHT); // whith 0xA as a theshhold it doesnt detect "no contact" with bright surfaces 
   uint8_t quali = readRegister(IMG_QUALITY); // detects no contact at a distance of about 1 cm with == 0x00
-  uint8_t thresh = readRegister(IMG_THRESHOLD);
-  uint8_t recog = readRegister(IMG_RECOG);
-  
-  Serial.print("\nthreshhold: 0x");
-  Serial.println(thresh, HEX);
+  // uint8_t thresh = readRegister(IMG_THRESHOLD); may be usefull have not checked
+  // uint8_t recog = readRegister(IMG_RECOG);
   if (quali == 0x00){ // detects no contact at a distance of about 1 cm
-    Serial.println("no contact");
+    Serial.print("\nno contact :");
   }
 }
 

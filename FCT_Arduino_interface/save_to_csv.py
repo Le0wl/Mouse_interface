@@ -2,13 +2,15 @@ import serial
 import csv
 import time
 import os
+from plotting import *
 from datetime import datetime
 
 # Config
 SERIAL_PORT = 'COM7'
 BAUD_RATE = 115200
-LOG_TIME = 20  # in seconds
+LOG_TIME = 5  # in seconds
 SAVE_PATH = 'logs'
+PLOT = False
 
 #--------------------
 os.makedirs(SAVE_PATH, exist_ok=True)
@@ -24,7 +26,7 @@ with open(filename, 'w', newline='') as csvfile:
 
     try:
         while (time.time() - start_time) < LOG_TIME:
-            line = ser.readline().decode().strip()
+            line = ser.readline().decode(errors='ignore').strip()
             if line:
                 values = line.split(',')
                 timestamp = datetime.now().strftime('%H:%M:%S.%f')
@@ -32,3 +34,9 @@ with open(filename, 'w', newline='') as csvfile:
     finally: 
         ser.close()
         print(f"\n Finished. File : {filename}")
+        if PLOT:
+            time.sleep(0.2)
+            filename = filename.replace(os.sep, '/')
+            plot_hist(filename)
+            plot_path(filename)
+            print(filename)
