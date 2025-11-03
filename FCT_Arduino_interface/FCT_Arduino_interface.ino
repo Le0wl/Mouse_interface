@@ -45,7 +45,7 @@ byte noSleep = 0xA0;
 
 int i = 0;
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(500000); //used to be 115200
   pinMode (SCLK, OUTPUT);
   mouseInit();
   
@@ -53,31 +53,40 @@ void setup() {
   if (DEBUG) {
     Serial.print("Device ID: 0x");
     Serial.println(prodId1, HEX);
-    Serial.print((prodId1==0x30)?"\nDevice OK":"\nUnknown Device"); // checks for product ID | leo changed from 31 to30
+    Serial.print((prodId1==0x30)?"\nDevice OK":"\nUnknown Device"); // checks for product ID 
   }
 }
 
 void loop() {
-  uint8_t motion = readRegister(MOTION_STATUS); // read motion status register
+  uint8_t motion = readRegister(MOTION_STATUS); // read motion status register | needs to be read for deltas to update
   if (motion == 0xFF){
-      Serial.print("\nBad connection");
-      printMode();
-    }
-  else { //new test for moved used to be "if(motion==0x81)"
-    if (DEBUG){
-      if (motion & 0x80) Serial.print("\nMoved!");
-      else Serial.print("\nno mouvement");
-    }
-    int8_t delta_x =(int8_t) readRegister(DEL_X); // read delta x register | leo thinks it's signed ints
-    int8_t delta_y = (int8_t) readRegister(DEL_Y); // read delta y register
+    Serial.print("\nBad connection");
+    printMode();
+  }
+  if (DEBUG){
+    if (motion & 0x80) Serial.print("\nMoved!");   //new test for moved used to be "if(motion==0x81)"
+    else Serial.print("\nno mouvement");
+  }
+  int8_t delta_x =(int8_t) readRegister(DEL_X); // read delta x register | signed ints
+  int8_t delta_y = (int8_t) readRegister(DEL_Y); // read delta y register
+  unsigned long t = micros();
+  Serial.print(t);
+  Serial.print(",");
+  bool contact = contactDectect();
+  if (contact) {
+    if (DEBUG || PLOT_HERE) Serial.print("\n contact:");
+    Serial.print(contact);
+    Serial.print(",");
     if (DEBUG || PLOT_HERE) Serial.print("\n delta X:");
     Serial.print(delta_x);
     Serial.print(",");
     if (DEBUG || PLOT_HERE) Serial.print(" delta Y:");
-    Serial.println(delta_y);  
-    contactDectect();
+    Serial.println(delta_y); 
   }
-  // delay(20); // seems stable at 20ms
+  else{
+    Serial.println("0,,");
+  }
+  // delay(20); // without delay and timestamped at the arduino it runs at 700Hz
 }
 
 void mouseInit(void) // function to initialize optical sensor.
@@ -148,13 +157,11 @@ void printMode(void){
   Serial.println(mode, HEX);
 }
 
-void contactDectect(void){
-  // uint8_t bright = readRegister(IMG_BRIGHT); // whith 0xA as a theshhold it doesnt detect "no contact" with bright surfaces 
+bool contactDectect(void){
   uint8_t quali = readRegister(IMG_QUALITY); // detects no contact at a distance of about 1 cm with == 0x00
-  // uint8_t thresh = readRegister(IMG_THRESHOLD); may be usefull have not checked
-  // uint8_t recog = readRegister(IMG_RECOG);
   if (quali == 0x00){ // detects no contact at a distance of about 1 cm
-    Serial.print("\nno contact :");
+    return false; // no contact
   }
+  return true;
 }
 

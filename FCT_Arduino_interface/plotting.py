@@ -7,16 +7,18 @@ import os
 # plot histogram
 def plot_hist(file):
     df_log = pd.read_csv(file)
-    df_log['Time'] = pd.to_datetime(df_log['Time'], format='%H:%M:%S.%f')
+    df_log['Time'] = pd.to_datetime(df_log['Time'], format='%Y-%m-%d %H:%M:%S.%f')
     df_log['Time_rel'] = (df_log['Time'] - df_log['Time'].iloc[0]).dt.total_seconds()
-
+    df_log['contact']
     plt.figure(figsize=(6,3))
-    plt.scatter(df_log['Time_rel'], df_log['delta_X'], label='delta_X', marker='+')
-    plt.scatter(df_log['Time_rel'], df_log['delta_Y'], label='delta_Y', marker='+')
+    plt.plot(df_log['Time_rel'], df_log['delta_X'], label='delta_X')
+    plt.plot(df_log['Time_rel'], df_log['delta_Y'], label='delta_Y')
+    plt.plot(df_log['Time_rel'],df_log['contact'], label = 'contact')
     plt.xlabel('Time (s)')
     plt.ylabel('Delta Values')
     plt.title('x and y deltas over time')
     plt.grid(True)
+    plt.legend()
     plt.savefig("figs/deltahist.png")
     plt.show()
 
