@@ -11,9 +11,9 @@ def plot_hist(file):
     df_log['Time_rel'] = (df_log['Time'] - df_log['Time'].iloc[0]).dt.total_seconds()
     df_log['contact']
     plt.figure(figsize=(6,3))
-    plt.plot(df_log['Time_rel'], df_log['delta_X'], label='delta_X')
-    plt.plot(df_log['Time_rel'], df_log['delta_Y'], label='delta_Y')
-    plt.plot(df_log['Time_rel'],df_log['contact'], label = 'contact')
+    plt.plot(df_log['Time_rel'], df_log['delta_X'], label='delta_X', color = 'orange')
+    plt.plot(df_log['Time_rel'], df_log['delta_Y'], label='delta_Y', color = 'blue')
+    plt.plot(df_log['Time_rel'],df_log['contact']*5, label = 'contact', color = 'g')
     plt.xlabel('Time (s)')
     plt.ylabel('Delta Values')
     plt.title('x and y deltas over time')

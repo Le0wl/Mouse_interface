@@ -10,7 +10,7 @@ import pandas as pd
 # Config
 SERIAL_PORT = 'COM7'
 BAUD_RATE = 500000 #115200
-LOG_TIME = 5  # in seconds
+LOG_TIME = 10  # in seconds
 SAVE_PATH = 'logs'
 PLOT = True
 

@@ -6,13 +6,14 @@ import time
 #det = iv.detector(cam=1,model="none")
 #det.collect_images(name="comp1")
 
-#REMINDER: Pose values are in [m] and [deg] use small values for testing!!!
+
 
 #test robot connect
 ur = UR("UR5e","169.254.217.10")
 ur.connect()
-currentPose = ur.recv.getActualTCPPose()
-ur.move_pose_absolute(currentPose+[0.02,0,0,0,0,0])
+currentPose = ur.recv.getActualTCPPose() #cartesian tool center point
+newPos = np.array(currentPose)+np.array([0.02,0,0,0,0,0])
+ur.move_pose_absolute(newPos.tolist())
 time.sleep(1)
 ur.move_pose_absolute(currentPose)
 #det = iv.detector(cam=1,model="runs/detect/gc_train/weights/best.pt")
