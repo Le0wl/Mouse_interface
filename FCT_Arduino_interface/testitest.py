@@ -1,7 +1,7 @@
 from plotting import *
 import pandas as pd
 
-PATH = 'logs/sensor_log_20251103_170434.csv'
+PATH = 'logs/sensor_log_2025-11-05_14-19-15.csv'
 # plot_path(PATH)
 plot_hist(PATH)
 df = pd.read_csv(PATH)

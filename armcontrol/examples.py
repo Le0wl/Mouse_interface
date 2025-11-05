@@ -9,13 +9,15 @@ import time
 
 
 #test robot connect
-ur = UR("UR5e","169.254.217.10")
+ur = UR("UR5e","169.254.123.10")
 ur.connect()
-currentPose = ur.recv.getActualTCPPose() #cartesian tool center point
-newPos = np.array(currentPose)+np.array([0.02,0,0,0,0,0])
+startPose = ur.recv.getActualTCPPose() #cartesian tool center point
+newPos = np.array(startPose)+np.array([0,-0.03,0,0,0,0])
 ur.move_pose_absolute(newPos.tolist())
 time.sleep(1)
-ur.move_pose_absolute(currentPose)
+ur.move_pose_relative([0.02,0,0,0,0,0])
+ur.move_pose_relative([0,0,0.02,0,0,0])
+ur.move_pose_absolute(startPose)
 #det = iv.detector(cam=1,model="runs/detect/gc_train/weights/best.pt")
 #while True:
 #    cal_obj = det.calibration_image(labels=["beans"])
