@@ -1,8 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-# import numpy as np
-import os
-# import csv
 
 # plot histogram
 def plot_hist(file, file2):
