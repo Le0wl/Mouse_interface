@@ -1,11 +1,11 @@
 import csv, time, serial
 from datetime import datetime
-from Testing.FCT_Arduino_interface.config import *
+from config import *
 
 # data logging thread 
-def log_data(stop_event, log_ready_event, filename, timing, timing_lock):
+def log_slip(stop_event, log_ready_event, filename, timing, timing_lock):
     try:
-        ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
+        ser = serial.Serial(SLIP_ARDUINO_PORT, SLIP_BAUD_RATE)
         for _ in range(10):
             ser.readline()  # flush the buffer
         with timing_lock:
@@ -22,13 +22,19 @@ def log_data(stop_event, log_ready_event, filename, timing, timing_lock):
                 while (not stop_event.is_set()) and ((time.time() - timing['start_time']) < LOG_TIME):
                     line = ser.readline().decode(errors='ignore').strip()
                     if line:
-                        values = line.split(',')
-                        if len(values) == 5:
-                            writer.writerow([datetime.now()] + values)
-                        else: print("mouse write error: csv has the wrong size")
+                        try:
+                            values = line.split(',')
+                            if len(values) == 5:
+                                writer.writerow([datetime.now()] + values)
+                            else: print("mouse write error: csv has the wrong size")
+                        except ValueError as e:
+                            print(f"Error parsing line '{line}': {e}")
+                        except Exception as e:
+                            print(f"Unexpected error processing line '{line}': {e}")
             finally:
                 ser.close()
-                print("Logging stopped")
+                print("Mouse logging finished")
     except Exception as e:
-        print("mouse log failure:", e)
+        print("Mouse log failure:", e)
+
 

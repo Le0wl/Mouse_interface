@@ -2,7 +2,7 @@ import serial
 import csv
 import time
 import os
-from plotting import *
+from plot.plotting import *
 from datetime import datetime
 import pandas as pd
 # current problems: takes 2 seconds to come start reading?
