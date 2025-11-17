@@ -1,7 +1,7 @@
 import csv, time
 import numpy as np
 from datetime import datetime
-from config import *
+from Testing.FCT_Arduino_interface.config import *
 
 
 # data logging thread

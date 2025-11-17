@@ -45,5 +45,5 @@ df.to_csv(filename)
 print(f"\n Finished. File : {filename}")
 
 if PLOT:
-    plot_hist(filename)
+    plot_hist0(filename)
     print(filename)

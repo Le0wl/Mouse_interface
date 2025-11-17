@@ -36,6 +36,9 @@
 
 #define DEBUG false
 #define PLOT_HERE false
+#define SLIP_THRESHOLD 5
+#define CONTACT_THRESHOLD 0x00
+
 
 
 const int SCLK = 8;
@@ -70,6 +73,7 @@ void loop() {
   int8_t delta_x =(int8_t) readRegister(DEL_X); // read delta x register | signed ints
   int8_t delta_y = (int8_t) readRegister(DEL_Y); // read delta y register
   unsigned long t = micros();
+  uint8_t mvt = sqrt(delta_y*delta_y + delta_x*delta_x);
   Serial.print(t);
   Serial.print(",");
   bool contact = contactDectect();
@@ -80,13 +84,24 @@ void loop() {
     if (DEBUG || PLOT_HERE) Serial.print("\n delta X:");
     Serial.print(delta_x);
     Serial.print(",");
-    if (DEBUG || PLOT_HERE) Serial.print(" delta Y:");
-    Serial.println(delta_y); 
+    if (DEBUG || PLOT_HERE) Serial.print("\n delta Y:");
+    Serial.print(delta_y); 
+    Serial.print(",");
+    if (DEBUG || PLOT_HERE) Serial.print("\n mouvement:");
+    Serial.print(mvt);
+    Serial.print(",");
+    if (DEBUG || PLOT_HERE) Serial.print(" slip:");
+    if (mvt > SLIP_THRESHOLD){        //slip test
+      Serial.println("true");
+    }
+    else{
+      Serial.println("false");
+    }
   }
   else{
-    Serial.println("0,,");
+    Serial.println("0,,,,0");
   }
-  // delay(20); // without delay and timestamped at the arduino it runs at 700Hz
+  delay(8); // without delay and timestamped at the arduino it runs at 670Hz
 }
 
 void mouseInit(void) // function to initialize optical sensor.
@@ -159,7 +174,7 @@ void printMode(void){
 
 bool contactDectect(void){
   uint8_t quali = readRegister(IMG_QUALITY); // detects no contact at a distance of about 1 cm with == 0x00
-  if (quali == 0x00){ // detects no contact at a distance of about 1 cm
+  if (quali == CONTACT_THRESHOLD){ // detects no contact at a distance of about 1 cm
     return false; // no contact
   }
   return true;

@@ -1,8 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# plot histogram
-def plot_hist(file, file2):
+# plot histogram sensor and arm
+def plot_hist_sensor_robot(file, file2, ax = None):
     df_log = pd.read_csv(file)
     df_log2 = pd.read_csv(file2)
     df_log['Time'] = pd.to_datetime(df_log['Time'], format='%Y-%m-%d %H:%M:%S.%f')
@@ -12,24 +12,56 @@ def plot_hist(file, file2):
     df_log2['Time_rel'] = (df_log2['Time'] - df_log2['Time'].iloc[0]).dt.total_seconds()
 
     df_log['contact']
+    if ax is None: 
+        plt.figure(figsize=(8,4))
+        plt.plot(df_log['Time_rel'],df_log['contact']*5, label = 'contact', color = 'g')
+        plt.plot(df_log['Time_rel'], df_log['Movement'], label='Movement', color = 'cyan')
+        plt.plot(df_log['Time_rel'], df_log['delta_X'], label='delta_X', color = 'orange')
+        plt.plot(df_log['Time_rel'], df_log['delta_Y'], label='delta_Y', color = 'blue')
+
+        plt.plot(df_log2['Time_rel'],df_log2['TCP_x']*100, label = 'arm pos in x', color = 'm')
+        plt.plot(df_log2['Time_rel'],df_log2['TCP_y']*100, label = 'arm pos in y', color = 'pink')
+        plt.plot(df_log2['Time_rel'],df_log2['TCP_z']*100, label = 'arm pos in z', color = 'purple')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Sensor Values')
+        plt.grid(True)
+        plt.legend()
+        plt.savefig("figs/deltahist_sensor_robot.png")
+        plt.show()
+    else:
+        ax.plot(df_log['Time_rel'],df_log['contact']*5, label = 'contact', color = 'g')
+        ax.plot(df_log['Time_rel'], df_log['delta_X'], label='delta_X', color = 'orange')
+        ax.plot(df_log['Time_rel'], df_log['delta_Y'], label='delta_Y', color = 'blue')
+
+        ax.plot(df_log2['Time_rel'],df_log2['TCP_x']*100, label = 'arm pos in x', color = 'cyan')
+        ax.plot(df_log2['Time_rel'],df_log2['TCP_y']*100, label = 'arm pos in y', color = 'pink')
+        ax.plot(df_log2['Time_rel'],df_log2['TCP_z']*100, label = 'arm pos in z', color = 'purple')
+        ax.set_ylim([-10,10])
+        return ax
+
+
+
+
+
+# plot histogram only sensor
+def plot_hist0(file):
+    df_log = pd.read_csv(file)
+    df_log['Time'] = pd.to_datetime(df_log['Time'], format='%Y-%m-%d %H:%M:%S.%f')
+    df_log['Time_rel'] = (df_log['Time'] - df_log['Time'].iloc[0]).dt.total_seconds()
+
+    df_log['contact']
     plt.figure(figsize=(8,4))
     plt.plot(df_log['Time_rel'],df_log['contact']*5, label = 'contact', color = 'g')
     plt.plot(df_log['Time_rel'], df_log['delta_X'], label='delta_X', color = 'orange')
     plt.plot(df_log['Time_rel'], df_log['delta_Y'], label='delta_Y', color = 'blue')
-    # plt.plot(df_log['Time_rel'],df_log['Motion_x']*100, label = 'arm movement in x', color = 'cyan')
-    # plt.plot(df_log['Time_rel'],df_log['Motion_y']*100, label = 'arm movement in y', color = 'pink')
-    # plt.plot(df_log['Time_rel'],df_log['Motion_z']*100, label = 'arm movement in z', color = 'purple')
-    plt.plot(df_log2['Time_rel'],df_log2['TCP_x']*100, label = 'arm pos in x', color = 'cyan')
-    plt.plot(df_log2['Time_rel'],df_log2['TCP_y']*100, label = 'arm pos in y', color = 'pink')
-    plt.plot(df_log2['Time_rel'],df_log2['TCP_z']*100, label = 'arm pos in z', color = 'purple')
+
     plt.xlabel('Time (s)')
     plt.ylabel('Delta Values')
     plt.title('x and y deltas over time')
     plt.grid(True)
     plt.legend()
-    plt.savefig("figs/deltahist.png")
+    plt.savefig("figs/deltahist_sensor.png")
     plt.show()
-
 
 def plot_hist2(file):
     df_log = pd.read_csv(file)
@@ -45,7 +77,7 @@ def plot_hist2(file):
     plt.title('x and y deltas over time')
     plt.grid(True)
     plt.legend()
-    plt.savefig("figs/deltahist.png")
+    plt.savefig("figs/deltahist_robot.png")
     plt.show()
 
 

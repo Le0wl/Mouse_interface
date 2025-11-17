@@ -1,6 +1,6 @@
 import csv, time, serial
 from datetime import datetime
-from config import *
+from Testing.FCT_Arduino_interface.config import *
 
 # data logging thread 
 def log_data(stop_event, log_ready_event, filename, timing, timing_lock):
@@ -13,7 +13,7 @@ def log_data(stop_event, log_ready_event, filename, timing, timing_lock):
 
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(['Time', 'contact', 'delta_X', 'delta_Y'])
+            writer.writerow(['Timestamp','Time', 'contact', 'delta_X', 'delta_Y','Movement'])
             print(f"Mouse Logging started for {LOG_TIME}s")
             log_ready_event.set()
             with timing_lock:
@@ -23,8 +23,8 @@ def log_data(stop_event, log_ready_event, filename, timing, timing_lock):
                     line = ser.readline().decode(errors='ignore').strip()
                     if line:
                         values = line.split(',')
-                        if len(values) == 4:
-                            writer.writerow(values)
+                        if len(values) == 5:
+                            writer.writerow([datetime.now()] + values)
                         else: print("mouse write error: csv has the wrong size")
             finally:
                 ser.close()
