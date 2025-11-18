@@ -1,7 +1,11 @@
-import csv, time
+import csv, time, io
+from contextlib import redirect_stdout
 import numpy as np
+import pandas as pd
 from datetime import datetime
 from config import *
+from armcontrol.ur_controller import UR
+
 
 
 # data logging thread
@@ -18,7 +22,7 @@ def log_robo(ur, filename2, stop_event, timing):
                     if pose and len(pose) == 6:
                         writer.writerow([datetime.now()] + pose[0,2])
                     else:
-                        print("upsi")
+                        print(f"Robot log error: revieced unexpected data: {pose}")
             finally:
                 print("Robot Logging stopped")
     except Exception as e:
@@ -28,7 +32,7 @@ def log_robo(ur, filename2, stop_event, timing):
 # robot move thread 
 def move_robot(ur, timing, timing_lock):
     try:
-        print('go robo', MOVE)
+        print('Motion:', MOVE)
         start_pose = ur.recv.getActualTCPPose()
         current_pose = start_pose
         for i, move in enumerate(MOVE):
@@ -48,6 +52,32 @@ def move_robot(ur, timing, timing_lock):
         with timing_lock:
             timing[f'end_last_motion'] = datetime.now()
 
-        print("Robot motion done")
+        print("Robot motion thread finished")
     except Exception as e:
-        print("movement failure:",e)
+        print("Motion thread failure:",e)
+
+def init_robot():
+    thread_robo = False
+    ur = UR("UR5e", UR_IP)
+    # overly complicated way to detect connection failure, but it works ¯\_(ツ)_/¯  
+    if(CONNECTIONS['robot']):
+        f = io.StringIO()
+        with redirect_stdout(f):
+            ur.connect()
+        output = f.getvalue()
+        if "cannot be connected" in output:
+            print(f"ERROR: cannot connect to: {UR_IP}, verify connection and IP")
+        else:
+            thread_robo = True
+    return ur, thread_robo
+
+def robot_data_pross(filename):
+    df = pd.read_csv(filename)
+    df = df.fillna(0)
+    start_x = pd.to_numeric(df['TCP_x'].iloc[0])
+    start_y = pd.to_numeric(df['TCP_y'].iloc[0])
+    start_z = pd.to_numeric(df['TCP_z'].iloc[0])
+    df["TCP_x"] = pd.to_numeric(df['TCP_x']) - start_x
+    df["TCP_y"] = pd.to_numeric(df['TCP_y']) - start_y
+    df["TCP_z"] = pd.to_numeric(df['TCP_z']) - start_z
+    df.to_csv(filename, index=False)

@@ -29,20 +29,21 @@ HEADER = ["Timestamp","Relative_Time",
 
 def log_load(timing, stop_event, filename, timing_lock, log_ready_event):
     try:
-        ser = serial.Serial(LC_ARDUINO_PORT, LC_BAUD_RATE)
+        print("enter_lc_logging")
+        ser_lc = serial.Serial(LC_ARDUINO_PORT, LC_BAUD_RATE)
         for _ in range(10):
-            ser.readline()  # flush the buffer
+            ser_lc.readline()  # flush the buffer
         with timing_lock:
             timing['start_time_LC'] = time.time()
 
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(["Timestamp", "Shear_Force","Normal_Force","Hook_Force"])
-            log_ready_event,set()
+            log_ready_event.set()
             print(f"Loadcell Logging started for {LOG_TIME}s")
             try:
                 while (not stop_event.is_set()) and ((time.time() - timing['start_time_LC']) < LOG_TIME):
-                    line = ser.readline().decode(errors='ignore').strip()
+                    line = ser_lc.readline().decode(errors='ignore').strip()
                     if line:
                         if not line.startswith("Force1(g),Force2(g),Force3(g),FSR(raw)") and not line.startswith("Initializing") and not line.startswith("Load Cell") and not line.startswith("Taring") and not line.startswith("Offsets"):
                             try:
@@ -55,7 +56,7 @@ def log_load(timing, stop_event, filename, timing_lock, log_ready_event):
                             except Exception as e:
                                 print(f"Unexpected error processing line '{line}': {e}")
             finally:
-                ser.close()
+                ser_lc.close()
                 print("Loadcell logging finished")
     except Exception as e:
         print("Loadcell log failure:", e)

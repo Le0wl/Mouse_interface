@@ -1,6 +1,9 @@
 import csv, time, serial
+import pandas as pd
 from datetime import datetime
 from config import *
+
+
 
 # data logging thread 
 def log_slip(stop_event, log_ready_event, filename, timing, timing_lock):
@@ -37,4 +40,9 @@ def log_slip(stop_event, log_ready_event, filename, timing, timing_lock):
     except Exception as e:
         print("Mouse log failure:", e)
 
-
+def slip_data_pross(filename_slip, timing):
+            df = pd.read_csv(filename_slip)
+            df = df.fillna(0)
+            start_arduino = pd.to_numeric(df['Time'].iloc[0])
+            df["Time"] = timing['slip_start_log'] + pd.to_timedelta(df["Time"] - start_arduino, unit="us")
+            df.to_csv(filename_slip, index=False)
