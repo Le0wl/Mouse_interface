@@ -1,28 +1,39 @@
 # Configure for the setup
-# SLIP_ARDUINO_PORT = 'COM7'
-# SLIP_BAUD_RATE = 500000
 
-# LC_ARDUINO_PORT = 'COM1' #change
-# LC_BAUD_RATE = 115200
 ARDUINO_PORT = {'slip': 'COM7', 'loadcell': 'COM1'}
 BAUD_RATE = {'slip': 500000, 'loadcell': 115200}
 
-COLUMNS = {'slip': ['Timestamp','Time', 'contact', 'delta_X', 'delta_Y','Movement'],
+COLUMNS = {'slip': ['Timestamp','Time', 'contact', 'delta_X', 'delta_Y'],
            'loadcell': ["Timestamp", "Shear_Force","Normal_Force","Hook_Force"]}
 
 #connections
-CONNECTIONS = {'slip' : True, 'robot': False, 'loadcell': False }
+CONNECTIONS = {'slip' : True, 'robot': True, 'loadcell': True }
 
 SAVE_PATH = 'logs'
-LOG_TIME = 10
+LOG_TIME = 40
 PLOT = True
 UR_IP = '169.254.20.10'
-SURFACE = 'test_table'
-MOVE = [
+SURFACE = 'paper_flat'
+MOVE = [                        # list of relativ waypoints
     [0, -0.04, 0,  0, 0, 0], 
     [0, 0.04, 0,  0, 0, 0],
+    [0, 0, 0.04,  0, 0, 0],     # up
+    [0, 0, -0.04,  0, 0, 0],    # down
     [0, -0.04, 0,  0, 0, 0],
     [0, 0.04, 0,  0, 0, 0],
-    [0, -0.04, 0,  0, 0, 0],
+    [0, 0, 0.04,  0, 0, 0],     # up
+    [0, 0, -0.035,  0, 0, 0],   # down
+    [0, -0.04, 0,  0, 0, 0],    # float at 5mm
     [0, 0.04, 0,  0, 0, 0],
+    [0, 0, -0.005,  0, 0, 0],   # down (contact)
+    [0, -0.04, 0.01,  0, 0, 0], # diagonal up
+    [0, 0.04, 0,  0, 0, 0],     # diagonal down
     ]
+
+# data we get: slip vs float vs contact
+# reapeat. 
+# full flat (perfect contact), 
+# contacting but at a slight angle (imperfect contact), 
+# on the following surfaces:
+# paper, plastic, fabric, silicon, semi-transparent material 
+

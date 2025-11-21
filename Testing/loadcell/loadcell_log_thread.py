@@ -30,7 +30,7 @@ HEADER = ["Timestamp","Relative_Time",
 def log_load(timing, stop_event, filename, timing_lock, log_ready_event):
     try:
         print("enter_lc_logging")
-        ser_lc = serial.Serial(LC_ARDUINO_PORT, LC_BAUD_RATE)
+        ser_lc = serial.Serial(ARDUINO_PORT['loadcell'], BAUD_RATE['loadcell'])
         for _ in range(10):
             ser_lc.readline()  # flush the buffer
         with timing_lock:

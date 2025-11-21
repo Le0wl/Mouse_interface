@@ -8,7 +8,7 @@ from config import *
 # data logging thread 
 def log_slip(stop_event, log_ready_event, filename, timing, timing_lock):
     try:
-        ser = serial.Serial(SLIP_ARDUINO_PORT, SLIP_BAUD_RATE)
+        ser = serial.Serial(ARDUINO_PORT['slip'], BAUD_RATE['slip'])
         for _ in range(10):
             ser.readline()  # flush the buffer
         with timing_lock:

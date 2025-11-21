@@ -1,44 +1,98 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# plot histogram sensor and arm
-def plot_hist_sensor_robot(file, file2, ax = None):
-    df_log = pd.read_csv(file)
-    df_log2 = pd.read_csv(file2)
-    df_log['Time'] = pd.to_datetime(df_log['Time'], format='%Y-%m-%d %H:%M:%S.%f')
-    df_log['Time_rel'] = (df_log['Time'] - df_log['Time'].iloc[0]).dt.total_seconds()
+# # plot histogram sensor and arm
+# def plot_hist_sensor_robot(file, file2, ax = None):
+#     df_log = pd.read_csv(file)
+#     df_log2 = pd.read_csv(file2)
+#     df_log['Time'] = pd.to_datetime(df_log['Time'], format='%Y-%m-%d %H:%M:%S.%f')
+#     df_log['Time_rel'] = (df_log['Time'] - df_log['Time'].iloc[0]).dt.total_seconds()
 
-    df_log2['Time'] = pd.to_datetime(df_log2['Time'], format='%Y-%m-%d %H:%M:%S.%f')
-    df_log2['Time_rel'] = (df_log2['Time'] - df_log2['Time'].iloc[0]).dt.total_seconds()
+#     df_log2['Time'] = pd.to_datetime(df_log2['Time'], format='%Y-%m-%d %H:%M:%S.%f')
+#     df_log2['Time_rel'] = (df_log2['Time'] - df_log2['Time'].iloc[0]).dt.total_seconds()
 
-    df_log['contact']
+#     df_log['contact']
+#     if ax is None: 
+#         plt.figure(figsize=(8,4))
+#         plt.plot(df_log['Time_rel'],df_log['contact']*5, label = 'contact', color = 'g')
+#         plt.plot(df_log['Time_rel'], df_log['Movement'], label='Movement', color = 'cyan')
+#         plt.plot(df_log['Time_rel'], df_log['delta_X'], label='delta_X', color = 'orange')
+#         plt.plot(df_log['Time_rel'], df_log['delta_Y'], label='delta_Y', color = 'blue')
+
+#         plt.plot(df_log2['Time_rel'],df_log2['TCP_x']*100, label = 'arm pos in x', color = 'm')
+#         plt.plot(df_log2['Time_rel'],df_log2['TCP_y']*100, label = 'arm pos in y', color = 'pink')
+#         plt.plot(df_log2['Time_rel'],df_log2['TCP_z']*100, label = 'arm pos in z', color = 'purple')
+#         plt.xlabel('Time (s)')
+#         plt.ylabel('Sensor Values')
+#         plt.grid(True)
+#         plt.legend()
+#         plt.savefig("figs/deltahist_sensor_robot.png")
+#         plt.show()
+#     else:
+#         ax.plot(df_log['Time_rel'],df_log['contact']*5, label = 'contact', color = 'g')
+#         ax.plot(df_log['Time_rel'], df_log['delta_X'], label='delta_X', color = 'orange')
+#         ax.plot(df_log['Time_rel'], df_log['delta_Y'], label='delta_Y', color = 'blue')
+
+#         ax.plot(df_log2['Time_rel'],df_log2['TCP_x']*100, label = 'arm pos in x', color = 'cyan')
+#         ax.plot(df_log2['Time_rel'],df_log2['TCP_y']*100, label = 'arm pos in y', color = 'pink')
+#         ax.plot(df_log2['Time_rel'],df_log2['TCP_z']*100, label = 'arm pos in z', color = 'purple')
+#         ax.set_ylim([-10,10])
+#         return ax
+
+def rel_time(filename):
+    df = pd.read_csv(filename)
+    df['Time'] = pd.to_datetime(df['Time'], format='%Y-%m-%d %H:%M:%S.%f')
+    df['Time_rel'] = (df['Time'] - df['Time'].iloc[0]).dt.total_seconds()
+    return df
+
+def plot_hist_sensors_robot(file_slip = None, file_robot = None, file_load = None, ax = None):
+    if file_slip is not None:
+        df_slip = rel_time(file_slip)
+        # df_slip['contact']
+    if file_load is not None:
+        df_load = rel_time(file_load)
+
+    if file_robot is not None:
+        df_robot = rel_time(file_robot)
+    
     if ax is None: 
         plt.figure(figsize=(8,4))
-        plt.plot(df_log['Time_rel'],df_log['contact']*5, label = 'contact', color = 'g')
-        plt.plot(df_log['Time_rel'], df_log['Movement'], label='Movement', color = 'cyan')
-        plt.plot(df_log['Time_rel'], df_log['delta_X'], label='delta_X', color = 'orange')
-        plt.plot(df_log['Time_rel'], df_log['delta_Y'], label='delta_Y', color = 'blue')
-
-        plt.plot(df_log2['Time_rel'],df_log2['TCP_x']*100, label = 'arm pos in x', color = 'm')
-        plt.plot(df_log2['Time_rel'],df_log2['TCP_y']*100, label = 'arm pos in y', color = 'pink')
-        plt.plot(df_log2['Time_rel'],df_log2['TCP_z']*100, label = 'arm pos in z', color = 'purple')
+        if file_slip is not None:
+            plt.plot(df_slip['Time_rel'],df_slip['contact']/5, label = 'contact', color = 'g')
+            # if 'Movement' in df_slip.columns:
+            #     plt.plot(df_slip['Time_rel'], df_slip['Movement'], label='Movement', color = 'cyan')
+            plt.plot(df_slip['Time_rel'], df_slip['delta_X'], label='delta_X', color = 'teal')
+            plt.plot(df_slip['Time_rel'], df_slip['delta_Y'], label='delta_Y', color = 'blue')
+        if file_load is not None:
+            plt.plot(df_load['Time_rel'],df_load['Shear_Force'], label = 'LC Shear Force', color = 'orange')
+            plt.plot(df_load['Time_rel'],df_load['Normal_Force'], label = 'LC Normal Force', color = 'coral')
+            plt.plot(df_load['Time_rel'],df_load['Hook_Force'], label = 'LC Hook Force', color = 'peachpuff')
+        if file_robot is not None:
+            plt.plot(df_robot['Time_rel'],df_robot['TCP_x']*100, label = 'arm pos in x', color = 'm')
+            plt.plot(df_robot['Time_rel'],df_robot['TCP_y']*100, label = 'arm pos in y', color = 'pink')
+            plt.plot(df_robot['Time_rel'],df_robot['TCP_z']*100, label = 'arm pos in z', color = 'purple')
         plt.xlabel('Time (s)')
         plt.ylabel('Sensor Values')
         plt.grid(True)
         plt.legend()
-        plt.savefig("figs/deltahist_sensor_robot.png")
+        plt.savefig("figs/test_hist_sensors_robot.png")
         plt.show()
     else:
-        ax.plot(df_log['Time_rel'],df_log['contact']*5, label = 'contact', color = 'g')
-        ax.plot(df_log['Time_rel'], df_log['delta_X'], label='delta_X', color = 'orange')
-        ax.plot(df_log['Time_rel'], df_log['delta_Y'], label='delta_Y', color = 'blue')
-
-        ax.plot(df_log2['Time_rel'],df_log2['TCP_x']*100, label = 'arm pos in x', color = 'cyan')
-        ax.plot(df_log2['Time_rel'],df_log2['TCP_y']*100, label = 'arm pos in y', color = 'pink')
-        ax.plot(df_log2['Time_rel'],df_log2['TCP_z']*100, label = 'arm pos in z', color = 'purple')
+        if file_slip is not None:
+            ax.plot(df_slip['Time_rel'],df_slip['contact']*5, label = 'contact', color = 'g')
+            ax.plot(df_slip['Time_rel'], df_slip['Movement'], label='Movement', color = 'cyan')
+            ax.plot(df_slip['Time_rel'], df_slip['delta_X'], label='delta_X', color = 'teal')
+            ax.plot(df_slip['Time_rel'], df_slip['delta_Y'], label='delta_Y', color = 'blue')
+        if file_load is not None:
+            ax.plot(df_load['Time_rel'],df_load['Shear_Force'], label = 'LC Shear Force', color = 'orange')
+            ax.plot(df_load['Time_rel'],df_load['Normal_Force'], label = 'LC Normal Force', color = 'coral')
+            ax.plot(df_load['Time_rel'],df_load['Hook_Force'], label = 'LC Hook Force', color = 'peachpuff')
+        if file_robot is not None:
+            ax.plot(df_robot['Time_rel'],df_robot['TCP_x']*100, label = 'arm pos in x', color = 'm')
+            ax.plot(df_robot['Time_rel'],df_robot['TCP_y']*100, label = 'arm pos in y', color = 'pink')
+            ax.plot(df_robot['Time_rel'],df_robot['TCP_z']*100, label = 'arm pos in z', color = 'purple')
         ax.set_ylim([-10,10])
         return ax
-
 
 
 
@@ -51,7 +105,7 @@ def plot_hist0(file):
 
     df_log['contact']
     plt.figure(figsize=(8,4))
-    plt.plot(df_log['Time_rel'],df_log['contact']*5, label = 'contact', color = 'g')
+    plt.plot(df_log['Time_rel'],df_log['contact']/5, label = 'contact', color = 'g')
     plt.plot(df_log['Time_rel'], df_log['delta_X'], label='delta_X', color = 'orange')
     plt.plot(df_log['Time_rel'], df_log['delta_Y'], label='delta_Y', color = 'blue')
 

@@ -1,4 +1,5 @@
 // Arduino Code for Dual Load Cell Reading with HX711
+// Code By Antares Zhang
 
 #include "HX711.h" // Include the HX711 library by bogde
 

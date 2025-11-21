@@ -4,7 +4,10 @@
  * 
  * This code detects when mouse is moved and also
  * prints the change in x direction and change in y
- * direction in the serial monitor.
+ * direction in the serial monitor. Please note that a
+ * higher frequency results in smaller delta values
+ * as the count is reset at every reading. 
+ * 
  * 
  * Author: Vineet Sukhthanker
  * Date: 6 October 2020
@@ -38,20 +41,16 @@
 #define PLOT_HERE false
 #define SLIP_THRESHOLD 5
 #define CONTACT_THRESHOLD 0x00
-
-
+#define FREQUENCY 670 // between 1 and 670 
 
 const int SCLK = 8;
 const int SDIO = 4;
+const byte noSleep = 0xA0;
 
-byte noSleep = 0xA0;
-
-int i = 0;
 void setup() {
   Serial.begin(500000); //used to be 115200
   pinMode (SCLK, OUTPUT);
   mouseInit();
-  
   byte prodId1 = readRegister(PROD_ID1);
   if (DEBUG) {
     Serial.print("Device ID: 0x");
@@ -72,36 +71,24 @@ void loop() {
   }
   int8_t delta_x =(int8_t) readRegister(DEL_X); // read delta x register | signed ints
   int8_t delta_y = (int8_t) readRegister(DEL_Y); // read delta y register
+  uint8_t quali = readRegister(IMG_QUALITY);
   unsigned long t = micros();
-  uint8_t mvt = sqrt(delta_y*delta_y + delta_x*delta_x);
   Serial.print(t);
   Serial.print(",");
-  bool contact = contactDectect();
-  if (contact) {
-    if (DEBUG || PLOT_HERE) Serial.print("\n contact:");
-    Serial.print(contact);
-    Serial.print(",");
-    if (DEBUG || PLOT_HERE) Serial.print("\n delta X:");
-    Serial.print(delta_x);
-    Serial.print(",");
-    if (DEBUG || PLOT_HERE) Serial.print("\n delta Y:");
-    Serial.print(delta_y); 
-    Serial.print(",");
-    if (DEBUG || PLOT_HERE) Serial.print("\n mouvement:");
-    Serial.print(mvt);
-    Serial.print(",");
-    if (DEBUG || PLOT_HERE) Serial.print(" slip:");
-    if (mvt > SLIP_THRESHOLD){        //slip test
-      Serial.println("true");
-    }
-    else{
-      Serial.println("false");
-    }
-  }
-  else{
-    Serial.println("0,,,,0");
-  }
-  delay(8); // without delay and timestamped at the arduino it runs at 670Hz
+  if (DEBUG || PLOT_HERE) Serial.print("\n contact:");
+  Serial.print(quali);
+  Serial.print(",");
+  if (DEBUG || PLOT_HERE) Serial.print("\n delta X:");
+  Serial.print(delta_x);
+  Serial.print(",");
+  if (DEBUG || PLOT_HERE) Serial.print("\n delta Y:");
+  Serial.println(delta_y); 
+
+  int period = 1000000/FREQUENCY;
+  int delay = period - 1500; // approximate us if a cycle without added delay
+  if (delay > 0){
+    delayMicroseconds(delay); // added delay to lower the frequency
+  }  
 }
 
 void mouseInit(void) // function to initialize optical sensor.
@@ -122,17 +109,13 @@ void mouseInit(void) // function to initialize optical sensor.
 
 byte readRegister(byte address) {
   pinMode (SDIO, OUTPUT);
-
   for (byte i=128; i >0 ; i >>= 1) {
     digitalWrite (SCLK, LOW);
     digitalWrite (SDIO, (address & i) != 0 ? HIGH : LOW);
     digitalWrite (SCLK, HIGH);
   }
-
   pinMode (SDIO, INPUT);
-
   delayMicroseconds(3); // tHOLD = 3us (mentioned in datasheet)
-
   byte res = 0;
   for (byte i=128; i >0 ; i >>= 1) {
     digitalWrite (SCLK, LOW);
@@ -140,28 +123,23 @@ byte readRegister(byte address) {
     if( digitalRead (SDIO) == HIGH )
       res |= i;
   }
-
   delayMicroseconds(3); // tHOLD = 3us min. (mentioned in datasheet)
- 
   return res;
 }
 
 void writeRegister(byte address, byte data) {
   address |= 0x80; // MSB indicates write mode.
   pinMode (SDIO, OUTPUT);
-
   for (byte i = 128; i > 0 ; i >>= 1) {
     digitalWrite (SCLK, LOW);
     digitalWrite (SDIO, (address & i) != 0 ? HIGH : LOW);
     digitalWrite (SCLK, HIGH);
   }
-
   for (byte i = 128; i > 0 ; i >>= 1) {
     digitalWrite (SCLK, LOW);
     digitalWrite (SDIO, (data & i) != 0 ? HIGH : LOW);
     digitalWrite (SCLK, HIGH);
   }
-
   delayMicroseconds(100);
 }
 
@@ -179,4 +157,74 @@ bool contactDectect(void){
   }
   return true;
 }
+
+
+// extra declarations:
+
+// const int window_size = 5;
+
+// int static x_readings[window_size] = {0};
+// int static y_readings[window_size] = {0};
+// int static c_readings[window_size] = {0};
+// int static m_readings[window_size] = {0}
+// int static readIndex  = 0;
+// long static total_x = 0;
+// long static total_y = 0;
+// long static total_c = 0;
+// long static total_m = 0;
+
+
+// extra things that are no longer in the loop():
+
+  // uint8_t mvt = sqrt(delta_y*delta_y + delta_x*delta_x);
+  // long smooth_x;
+  // long smooth_y;
+  // long smooth_c;
+  // smooth (delta_x, delta_y, (int)contact, &smooth_x, &smooth_y, &smooth_c);
+
+    // Serial.print(",");
+    // if (DEBUG || PLOT_HERE) Serial.print("\n mouvement:");
+    // Serial.print(mvt);
+    // Serial.print(",");
+    // if (DEBUG || PLOT_HERE) Serial.print(" slip:");
+    // if (mvt > SLIP_THRESHOLD){        //slip test
+    //   Serial.println(true);
+    // }
+    // else{
+    //   Serial.println(false);
+    // }
+
+
+// extra funcitons:
+
+// void smooth (int x, int y, int c, long* avg_x, long* avg_y, long* avg_c){
+//   *avg_x = moving_avg(x, 'x');
+//   *avg_y = moving_avg(y, 'y');
+//   *avg_c = moving_avg(c, 'c');
+//   readIndex += 1;
+//   if (readIndex >= window_size){readIndex = 0;}
+// }
+
+// long moving_avg(int value, char var){
+//   long avg;
+//   long * total;
+//   int* readings;
+//   switch(var){
+//     case 'x': total = &total_x; readings = x_readings; break;
+//     case 'y': total = &total_y; readings = y_readings; break;
+//     case 'c': total = &total_c; readings = c_readings; break;
+//     case 'm': total = &total_m; readings = m_readings; break;
+//     default:
+//       Serial.println("\n Moving average error, no buffer for ");
+//       return 0;
+//   }
+//   *total -= readings[readIndex];
+//   readings[readIndex] = value;
+//   *total +=  readings[readIndex];
+//   avg = *total / window_size;
+//   return avg;
+// }
+ 
+
+
 

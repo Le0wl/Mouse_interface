@@ -1,6 +1,5 @@
 import time, threading, os
-import datetime
-# import pandas as pd
+from datetime import datetime as dt
 from armcontrol.ur_controller import UR
 from armcontrol.robot_threads import *
 from plot.plotting import *
@@ -20,7 +19,7 @@ def serial_logger(name, filename, log_ready_event, timing, timing_lock, stop_eve
             log_ready_event.set()
             start_time = time.time()
             with timing_lock:
-                timing[f'{name}_start_log'] = datetime.datetime.now()
+                timing[f'{name}_start_log'] = dt.now()
             try:
                 while (not stop_event.is_set()) and ((time.time() - start_time) < LOG_TIME):
                     line = ser.readline().decode(errors='ignore').strip()
@@ -28,7 +27,7 @@ def serial_logger(name, filename, log_ready_event, timing, timing_lock, stop_eve
                         try:
                             values = line.split(',')
                             if len(values) == len(COLUMNS[name])-1:
-                                writer.writerow([datetime.datetime.now()] + values)
+                                writer.writerow([dt.now()] + values)
                             else: print(f"{name} write error: csv has the wrong size")
                         except ValueError as e:
                             print(f"{name}: Error parsing line '{line}': {e}")
@@ -43,11 +42,10 @@ def serial_logger(name, filename, log_ready_event, timing, timing_lock, stop_eve
         
 def main():
     # initiation of all the things
-    d = datetime.datetime
     os.makedirs(SAVE_PATH, exist_ok=True)
-    filename_slip = os.path.join(SAVE_PATH, f"slip_log_{d.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
-    filename_load = os.path.join(SAVE_PATH, f"load_log_{d.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
-    filename_robo = os.path.join(SAVE_PATH, f"robot_log_{d.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
+    filename_slip = os.path.join(SAVE_PATH, f"slip_log_{dt.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
+    filename_load = os.path.join(SAVE_PATH, f"load_log_{dt.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
+    filename_robo = os.path.join(SAVE_PATH, f"robot_log_{dt.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
     ur, thread_robo = init_robot()
     
     # thread stuff 
@@ -56,15 +54,16 @@ def main():
     stop_event = threading.Event()
     slip_log_ready_event = threading.Event()
     load_log_ready_event = threading.Event()
-    # slip_log_thread = threading.Thread(target=log_slip, args=(stop_event, slip_log_ready_event, filename_slip, timing, timing_lock))
+
     slip_log_thread = threading.Thread(target=serial_logger, args=('slip', filename_slip, slip_log_ready_event, timing, timing_lock, stop_event))
+    load_log_thread = threading.Thread(target=serial_logger, args=('loadcell', filename_load, load_log_ready_event, timing, timing_lock, stop_event))
     motion_thread = threading.Thread(target=move_robot, args=(ur, timing, timing_lock))
     robo_log_thread = threading.Thread(target=log_robo, args=(ur, filename_robo, stop_event, timing))
-    load_log_thread = threading.Thread(target= log_load, args=(timing, stop_event, filename_load, timing_lock, load_log_ready_event))
     
     # log go
     ready = []
     if (CONNECTIONS['slip']):
+        print('eyyo')
         slip_log_thread.start()
         ready.append(slip_log_ready_event)
 
@@ -86,19 +85,32 @@ def main():
         if (CONNECTIONS['slip']):
             slip_log_thread.join() 
 
+        to_plot = []
         # prettyfy data 
         if ('slip_start_log'in timing):
             slip_data_pross(filename_slip, timing)
             print(f"Finished mouse log. File: {filename_slip}")
-
-            if thread_robo:
-                robot_data_pross(filename_robo, timing)
-                print(f"Finished robot log. File: {filename_robo}")
-                if PLOT and os.path.exists(filename_slip) and os.path.exists(filename_robo):
-                    plot_hist_sensor_robot(filename_slip, filename_robo)
+            to_plot.append(filename_slip)
         else:
-            print('no logging happened')
-            
+            print('no slip logging happened')
+
+
+
+        if thread_robo:
+            robot_data_pross(filename_robo, timing)
+            print(f"Finished robot log. File: {filename_robo}")       
+        else:
+            print('no robot logging happened')
+
+        if ('load_start_log'in timing):
+            slip_data_pross(filename_load, timing)
+            print(f"Finished load log. File: {filename_load}")
+            to_plot.append(filename_load)
+        else:
+            print('no load logging happened')
+
+        if PLOT:
+            plot_hist_sensors_robot(*to_plot)
     else: 
         print("ERROR: Logging setup did not complete within 10 seconds. Terminating.")
         stop_event.set()
