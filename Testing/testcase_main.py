@@ -98,7 +98,7 @@ def main():
         if thread_robo:
             robot_data_pross(filename_robo)
             print(f"Finished robot log. File: {filename_robo}") 
-            to_plot.append(filename_robo)      
+            to_plot.append(filename_robo)       
         else:
             print('no robot logging happened')
 
