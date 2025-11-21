@@ -37,9 +37,10 @@ def moving_averge(path):
     plt.axis('equal')  
     plt.show()
 
-path = 'logs/slip_log_2025-11-21_09-54-27paper_flat.csv'
-path2 = 'logs/robot_log_2025-11-06_10-16-47.csv'
-print_freq(path, 'Time')
+path = 'logs/load_log_2025-11-21_14-07-08test.csv'
+path2 = 'logs/slip_log_2025-11-21_14-07-08test.csv'
+print_freq(path, 'Timestamp')
+plot_hist_sensors_robot(file_load=path, file_slip=path2)
 
 
     

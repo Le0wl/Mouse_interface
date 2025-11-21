@@ -41,7 +41,7 @@
 #define PLOT_HERE false
 #define SLIP_THRESHOLD 5
 #define CONTACT_THRESHOLD 0x00
-#define FREQUENCY 670 // between 1 and 670 
+#define FREQUENCY 10 // between 1 and 670 
 
 const int SCLK = 8;
 const int SDIO = 4;
@@ -73,14 +73,11 @@ void loop() {
   int8_t delta_y = (int8_t) readRegister(DEL_Y); // read delta y register
   uint8_t quali = readRegister(IMG_QUALITY);
   unsigned long t = micros();
-  Serial.print(t);
-  Serial.print(",");
+  Serial.print(t); Serial.print(",");
   if (DEBUG || PLOT_HERE) Serial.print("\n contact:");
-  Serial.print(quali);
-  Serial.print(",");
+  Serial.print(quali); Serial.print(",");
   if (DEBUG || PLOT_HERE) Serial.print("\n delta X:");
-  Serial.print(delta_x);
-  Serial.print(",");
+  Serial.print(delta_x);  Serial.print(",");
   if (DEBUG || PLOT_HERE) Serial.print("\n delta Y:");
   Serial.println(delta_y); 
 

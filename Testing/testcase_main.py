@@ -24,15 +24,16 @@ def serial_logger(name, filename, log_ready_event, timing, timing_lock, stop_eve
                 while (not stop_event.is_set()) and ((time.time() - start_time) < LOG_TIME):
                     line = ser.readline().decode(errors='ignore').strip()
                     if line:
-                        try:
-                            values = line.split(',')
-                            if len(values) == len(COLUMNS[name])-1:
-                                writer.writerow([dt.now()] + values)
-                            else: print(f"{name} write error: csv has the wrong size")
-                        except ValueError as e:
-                            print(f"{name}: Error parsing line '{line}': {e}")
-                        except Exception as e:
-                            print(f"{name}: Unexpected error processing line '{line}': {e}")
+                        if not line.startswith("Force1(g),Force2(g)") and not line.startswith("Initializing") and not line.startswith("Load Cell") and not line.startswith("Taring") and not line.startswith("Offsets"):
+                            try:
+                                values = line.split(',')
+                                if len(values) == len(COLUMNS[name])-1:
+                                    writer.writerow([dt.now()] + values)
+                                else: print(f"{name} write error: csv has the wrong size")
+                            except ValueError as e:
+                                print(f"{name}: Error parsing line '{line}': {e}")
+                            except Exception as e:
+                                print(f"{name}: Unexpected error processing line '{line}': {e}")
             finally:
                 ser.close()
                 print(f"{name} logging finished")
@@ -94,16 +95,15 @@ def main():
         else:
             print('no slip logging happened')
 
-
-
         if thread_robo:
-            robot_data_pross(filename_robo, timing)
-            print(f"Finished robot log. File: {filename_robo}")       
+            robot_data_pross(filename_robo)
+            print(f"Finished robot log. File: {filename_robo}") 
+            to_plot.append(filename_robo)      
         else:
             print('no robot logging happened')
 
-        if ('load_start_log'in timing):
-            slip_data_pross(filename_load, timing)
+        if ('loadcell_start_log'in timing):
+            load_data_pross(filename_load)
             print(f"Finished load log. File: {filename_load}")
             to_plot.append(filename_load)
         else:

@@ -1,118 +1,127 @@
-// Arduino Code for Dual Load Cell Reading with HX711
-// Code By Antares Zhang
+// ============================================================
+// Arduino Code: 3x Load Cells (HX711) + 1x FSR (A0 分压读取)
+// 输出格式: Force1(g),Force2(g),Force3(g),FSR(raw)
+// code by Antares
+// ============================================================
 
-#include "HX711.h" // Include the HX711 library by bogde
+#include "HX711.h"
 
-// Define the pins for the first HX711 module
-//load cell 1 is horizontal shear force
-const int LOADCELL_DOUT_PIN_1 = 3; // Data pin for Load Cell 1
-const int LOADCELL_SCK_PIN_1 = 2;  // Clock pin for Load Cell 1
+// --- HX711 引脚定义 ---
+// Load Cell 1: 水平剪切力
+const int LOADCELL_DOUT_PIN_1 = 3;
+const int LOADCELL_SCK_PIN_1  = 2;
 
-// Define the pins for the second HX711 module
-//load cell 2 is the vertical normal force
-const int LOADCELL_DOUT_PIN_2 = 5; // Data pin for Load Cell 2
-const int LOADCELL_SCK_PIN_2 = 4;  // Clock pin for Load Cell 2
+// Load Cell 2: 竖直法向力
+const int LOADCELL_DOUT_PIN_2 = 5;
+const int LOADCELL_SCK_PIN_2  = 4;
 
-// Define the pins for the Third HX711 module
-//load cell 2 is the vertical normal force
-const int LOADCELL_DOUT_PIN_3 = 7; // Data pin for Load Cell 2
-const int LOADCELL_SCK_PIN_3 = 6;  // Clock pin for Load Cell 2
+// // Load Cell 3: 竖直法向力
+// const int LOADCELL_DOUT_PIN_3 = 7;
+// const int LOADCELL_SCK_PIN_3  = 6;
 
-// Create instances of the HX711 class for each load cell
+// // --- FSR 定义 ---
+// const int fsrPin = A0;   // FSR 分压点接 A0
+// const int fsrResistor = 1000; // 1kΩ 电阻（仅用于说明）
+
+const int FREQUENCY = 100;
+
+// --- HX711 对象 ---
 HX711 scale1;
 HX711 scale2;
-HX711 scale3;
+// HX711 scale3;
 
-// --- Calibration Values ---
-// IMPORTANT: These are example values. You MUST calibrate your load cells.
-// Calibrate by placing a known weight on the load cell and dividing the raw
-// reading by the known weight.
-// Example: If reading 1,000,000 for 1kg, scale = 1,000,000 / 1 = 1,000,000.
-// If your reading is negative, use a negative scale factor.
-float calibration_factor_1 = 1861.078002; // Adjust this value after calibration for Load Cell 1
-float calibration_factor_2 = 2030.073927; // Adjust this value after calibration for Load Cell 2
-float calibration_factor_3 = -686.925; // Adjust this value after calibration for Load Cell 3
+// --- 校准参数（需要你自己标定！）---
+float calibration_factor_1 = 1861.078002;
+float calibration_factor_2 = 2030.073927;
+// float calibration_factor_3 = 693.757232;
 
-// Offset values (tare value at no load)
-long offset_1 = -7379; // Will be set in setup() or after taring
-long offset_2 = 526431; // Will be set in setup() or after taring
-long offset_3 = -1; // Will be set in setup() or after taring
+// --- 偏移量（tare）---
+long offset_1 = 0;
+long offset_2 = 0;
+// long offset_3 = 0;
 
 void setup() {
-  Serial.begin(115200); // Start serial communication at 19200 baud
-
+  Serial.begin(115200);
   Serial.println("Initializing Load Cells...");
 
-  // Initialize Load Cell 1
+  // --- 初始化 HX711 ---
   scale1.begin(LOADCELL_DOUT_PIN_1, LOADCELL_SCK_PIN_1);
-  delay(100);
-  if (scale1.is_ready()) {
-    Serial.println("Load Cell 1 is ready.");
-  } else {
-    Serial.println("Load Cell 1 not found. Check wiring.");
-  }
-
-  // Initialize Load Cell 2
   scale2.begin(LOADCELL_DOUT_PIN_2, LOADCELL_SCK_PIN_2);
-  delay(100);
-  if (scale2.is_ready()) {
-    Serial.println("Load Cell 2 is ready.");
-  } else {
-    Serial.println("Load Cell 2 not found. Check wiring.");
-  }
+  // scale3.begin(LOADCELL_DOUT_PIN_3, LOADCELL_SCK_PIN_3);
 
-  // Initialize Load Cell 3
-  scale3.begin(LOADCELL_DOUT_PIN_3, LOADCELL_SCK_PIN_3);
-  delay(100);
-  if (scale3.is_ready()) {
-    Serial.println("Load Cell 3 is ready.");
-  } else {
-    Serial.println("Load Cell 3 not found. Check wiring.");
-  }
+  delay(10);
 
-  // Set the scale factor
+  if (scale1.is_ready()) Serial.println("Load Cell 1 ready.");
+  else Serial.println("Load Cell 1 not found!");
+
+  if (scale2.is_ready()) Serial.println("Load Cell 2 ready.");
+  else Serial.println("Load Cell 2 not found!");
+
+  // if (scale3.is_ready()) Serial.println("Load Cell 3 ready.");
+  // else Serial.println("Load Cell 3 not found!");
+
+  // --- 设置校准系数 ---
   scale1.set_scale(calibration_factor_1);
   scale2.set_scale(calibration_factor_2);
-  scale3.set_scale(calibration_factor_3);
+  // scale3.set_scale(calibration_factor_3);
 
-  Serial.println("Taring Load Cells... Please remove all weight.");
-  // Tare (zero out) the scales - takes a few seconds and averages readings
-  // This value can be stored in EEPROM for persistence or saved manually after calibration.
-  offset_1 = scale1.read_average(10); // Take 10 readings for taring
-  offset_2 = scale2.read_average(10); // Take 10 readings for taring
-  offset_3 = scale3.read_average(10); // Take 10 readings for taring
+  // --- 去皮 ---
+  Serial.println("Taring Load Cells...");
+  offset_1 = scale1.read_average(10);
+  offset_2 = scale2.read_average(10);
+  // offset_3 = scale3.read_average(10);
+
   scale1.set_offset(offset_1);
   scale2.set_offset(offset_2);
-  scale3.set_offset(offset_3);
+  // scale3.set_offset(offset_3);
 
-  Serial.print("Load Cell 1 Offset: "); Serial.println(offset_1);
-  Serial.print("Load Cell 2 Offset: "); Serial.println(offset_2);
-  Serial.print("Load Cell 3 Offset: "); Serial.println(offset_3);
-  Serial.println("Load cells tared. Ready to read force.");
-  Serial.println("Force1(g),Force2(g),Force3(g)"); // CSV Header for Python script
+  Serial.println("Offsets set.");
+  
+  // --- 打印 CSV 表头 ---
+  Serial.println("Force1(g),Force2(g)");
 }
 
 void loop() {
-  // Read raw values from each load cell
-  // .get_value() reads a single raw value
-  // .read_average() reads a specified number of raw values and averages them
-  // .get_units() converts raw readings to units (grams, kg, lbs etc.) based on calibration_factor
-  float force1 = scale1.get_units(1); // Get average of 5 readings for Load Cell 1
-  float force2 = scale2.get_units(1); // Get average of 5 readings for Load Cell 2
-  float force3 = scale3.get_units(1); // Get average of 5 readings for Load Cell 3
+  // --- 读取 HX711 ---
+  float force1 = scale1.get_units(1);
+  float force2 = scale2.get_units(1);
+  // float force3 = scale3.get_units(1);
 
-  // Limit to 4 decimal places for consistency with Python rounding
-  force1 = round(force1 * 10000.0) / 10000.0;
-  force2 = round(force2 * 10000.0) / 10000.0;
-  force3 = round(force3 * 10000.0) / 10000.0;
+  // --- 读取 FSR ---
+  // float fsrReading = analogRead(fsrPin); // 0~1023 的原始值
+  char buff[48];
+  // 保留 2 位小数
+  force1 = round(force1 * 100.0) / 100.0;
+  force2 = round(force2 * 100.0) / 100.0;
+  // force3 = round(force3 * 100.0) / 100.0;
+  // fsrReading = round(fsrReading * 100.0) / 100.0;
+  
+  // --- 串口输出 CSV 格式 ---
 
-  // Send data over serial in a CSV-friendly format
-  Serial.print(force1, 4); // Print force1 with 4 decimal places
-  Serial.print(",");      // Separator
-  Serial.print(force2, 4); // Print force2 with 4 decimal places and a newline
-  Serial.print(",");      // Separator
-  Serial.println(force3, 4); // Print force3 with 4 decimal places and a newline
+  
+  //sprintf(buff, "%.1f,%.1f,%.1f,%.2f", force1, force2, force3, fsrReading);
+  //Serial.println(String(force1,2)+","+String(force2,2)+","+String(force3,2)+","+String(fsrReading,2));
+  Serial.print(force1, 2); Serial.print(",");
+  Serial.println(force2, 2); // Serial.print(",");
+  // Serial.print(force3, 2); Serial.print(",");
+  // Serial.println(fsrReading, 2);
 
-  // Introduce a slight delay to avoid overwhelming the serial port
-  delay(100); // Read approximately 10 times per second
+  // // 保留 4 位小数
+  // force1 = round(force1 * 10000.0) / 10000.0;
+  // force2 = round(force2 * 10000.0) / 10000.0;
+  // force3 = round(force3 * 10000.0) / 10000.0;
+  // fsrReading = round(fsrReading * 10000.0) / 10000.0;
+  
+  // // --- 串口输出 CSV 格式 ---
+  // Serial.print(force1, 4); Serial.print(",");
+  // Serial.print(force2, 4); Serial.print(",");
+  // Serial.print(force3, 4); Serial.print(",");
+  // Serial.println(fsrReading, 4);
+
+  delay(100); // 10 Hz 采样
+  // int period = 1000000/FREQUENCY;
+  // int delay = period; // - approximate us if a cycle without added delay tbd
+  // if (delay > 0){
+  //   delayMicroseconds(delay); // added delay to lower the frequency
+  // } 
 }

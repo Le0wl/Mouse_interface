@@ -6,6 +6,7 @@ import rtde_receive
 import serial.tools.list_ports
 import serial
 import numpy as np
+import pandas as pd
 import csv
 import threading
 import datetime
@@ -138,3 +139,7 @@ def log_data(rtde_r, ser):
         "Arm_Pos_Z": round(arm_pos[2],4)
     }
 
+def load_data_pross(filename):
+            df = pd.read_csv(filename)
+            df = df.fillna(0)
+            df.to_csv(filename, index=False)

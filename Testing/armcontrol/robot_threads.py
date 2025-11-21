@@ -9,18 +9,20 @@ from armcontrol.ur_controller import UR
 
 
 # data logging thread
-def log_robo(ur, filename2, stop_event, timing):
+def log_robo(ur, filename, stop_event, timing):
     try:
-        with open(filename2, 'w', newline='') as csvfile:
+        with open(filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(['Time', 'TCP_x', 'TCP_y', 'TCP_z'])
             print(f"Robot Logging started for {LOG_TIME}s")
+            start_time = time.time()
+            timing['robot_start_log'] = datetime.now()
             try:
-                while (not stop_event.is_set()) and ((time.time() - timing['start_time']) < LOG_TIME):
+                while (not stop_event.is_set()) and (time.time() - start_time < LOG_TIME):
                     time.sleep(0.01)
                     pose = ur.recv.getActualTCPPose()
                     if pose and len(pose) == 6:
-                        writer.writerow([datetime.now()] + pose[0,2])
+                        writer.writerow([datetime.now()] + pose[0:2])
                     else:
                         print(f"Robot log error: revieced unexpected data: {pose}")
             finally:
