@@ -7,13 +7,12 @@ from config import *
 from armcontrol.ur_controller import UR
 
 
-
 # data logging thread
 def log_robo(ur, filename, stop_event, timing):
     try:
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(['Time', 'TCP_x', 'TCP_y', 'TCP_z'])
+            writer.writerow(["Time", "TCP_x", "TCP_y", "TCP_z", "rot1", "rot2", "rot3" ])
             print(f"Robot Logging started for {LOG_TIME}s")
             start_time = time.time()
             timing['robot_start_log'] = datetime.now()
@@ -22,14 +21,13 @@ def log_robo(ur, filename, stop_event, timing):
                     time.sleep(0.01)
                     pose = ur.recv.getActualTCPPose()
                     if pose and len(pose) == 6:
-                        writer.writerow([datetime.now()] + pose[0:2])
+                        writer.writerow([datetime.now()] + pose)
                     else:
                         print(f"Robot log error: revieced unexpected data: {pose}")
             finally:
                 print("Robot Logging stopped")
     except Exception as e:
         print("robot log failure:", e)
-
 
 # robot move thread 
 def move_robot(ur, timing, timing_lock):
@@ -57,6 +55,7 @@ def move_robot(ur, timing, timing_lock):
         print("Robot motion thread finished")
     except Exception as e:
         print("Motion thread failure:",e)
+
 
 def init_robot():
     thread_robo = False
