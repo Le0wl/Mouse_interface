@@ -4,7 +4,7 @@ ARDUINO_PORT = {'slip': 'COM7', 'loadcell': 'COM9'}
 BAUD_RATE = {'slip': 500000, 'loadcell': 115200}
 
 COLUMNS = {'slip': ['Timestamp','Time', 'contact', 'delta_X', 'delta_Y'],
-           'loadcell': ["Timestamp", "Shear_Force","Normal_Force"]}
+           'loadcell': ["Timestamp", "Shear_Force"]} #normal forche after if there
 
 #connections
 CONNECTIONS = {'slip' : True, 'robot': True, 'loadcell': True }
@@ -13,7 +13,7 @@ SAVE_PATH = 'logs'
 LOG_TIME = 30           # maximum logtime before terminating in seconds
 PLOT = True
 UR_IP = '169.254.20.10'
-SURFACE = 'silicon_bad_contact'
+SURFACE = 'plastic_80hz'
 MOVE = [                        # list of relative waypoints
     [0, -0.04, 0,  0, 0, 0],    # forward
     [0, 0, 0.04,  0, 0, 0],     # up (4cm)

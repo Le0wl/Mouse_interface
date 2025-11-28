@@ -1,5 +1,5 @@
 import time, threading, os
-from datetime import datetime as dt
+from datetime import datetime
 from armcontrol.ur_controller import UR
 from armcontrol.robot_threads import *
 from plot.plotting import *
@@ -9,6 +9,7 @@ from config import *
 
 def serial_logger(name, filename, log_ready_event, timing, timing_lock, stop_event):
     try:
+        dt = datetime.datetime
         ser = serial.Serial(ARDUINO_PORT[name], BAUD_RATE[name])
         for _ in range(10):
             ser.readline()  # flush the buffer
@@ -29,7 +30,7 @@ def serial_logger(name, filename, log_ready_event, timing, timing_lock, stop_eve
                                 values = line.split(',')
                                 if len(values) == len(COLUMNS[name])-1:
                                     writer.writerow([dt.now()] + values)
-                                else: print(f"{name} write error: csv has the wrong size")
+                                else: print(f"{name} write error: csv has the wrong size:{values}")
                             except ValueError as e:
                                 print(f"{name}: Error parsing line '{line}': {e}")
                             except Exception as e:
@@ -43,6 +44,7 @@ def serial_logger(name, filename, log_ready_event, timing, timing_lock, stop_eve
         
 def main():
     # initiation of all the things
+    dt = datetime.datetime
     os.makedirs(SAVE_PATH, exist_ok=True)
     filename_slip = os.path.join(SAVE_PATH, f"slip_log_{dt.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
     filename_load = os.path.join(SAVE_PATH, f"load_log_{dt.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
