@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from utils import *
+import re
 
 contact_thresh = 5
 slip_thresh = 5
@@ -32,17 +33,26 @@ def plot_hist_sensors_robot(file_slip = None, file_robot = None, file_load = Non
 def subplot_hist_sensors_robot(ax, file_slip = None, file_robot = None, file_load = None):
     df_slip, df_load, df_robot = synch(file_slip, file_robot, file_load)   
     if file_slip is not None:
-        ax.plot(df_slip['Time_rel'],df_slip['contact']*5, label = 'contact', color = 'g')
-        ax.plot(df_slip['Time_rel'], df_slip['delta_X'], label='delta_X', color = 'teal')
-        ax.plot(df_slip['Time_rel'], df_slip['delta_Y'], label='delta_Y', color = 'blue')
+        try:
+            ax.plot(df_slip['Time_rel'],df_slip['contact']*5, label = 'contact', color = 'g')
+            ax.plot(df_slip['Time_rel'], df_slip['delta_X'], label='delta_X', color = 'teal')
+            ax.plot(df_slip['Time_rel'], df_slip['delta_Y'], label='delta_Y', color = 'blue')
+        except Exception as e:
+            print(f"ERROR slip plotting:", e)
     if file_load is not None:
-        ax.plot(df_load['Time_rel'],df_load['Shear_Force'], label = 'LC Shear Force', color = 'orange')
-        if "Normal_Force" in df_load.columns:
-            ax.plot(df_load['Time_rel'],df_load['Normal_Force'], label = 'LC Normal Force', color = 'coral')
+        try:
+            ax.plot(df_load['Time_rel'],df_load['Shear_Force'], label = 'LC Shear Force', color = 'orange')
+            if "Normal_Force" in df_load.columns:
+                ax.plot(df_load['Time_rel'],df_load['Normal_Force'], label = 'LC Normal Force', color = 'coral')
+        except Exception as e:
+            print(f"ERROR load plotting:", e)
     if file_robot is not None:
-        ax.plot(df_robot['Time_rel'],df_robot['TCP_x']*100, label = 'arm pos in x[cm]', color = 'm')
-        ax.plot(df_robot['Time_rel'],df_robot['TCP_y']*100, label = 'arm pos in y[cm]', color = 'pink')
-        ax.plot(df_robot['Time_rel'],df_robot['TCP_z']*100, label = 'arm pos in z[cm]', color = 'purple')
+        try:
+            ax.plot(df_robot['Time_rel'],df_robot['TCP_x']*100, label = 'arm pos in x[cm]', color = 'm')
+            ax.plot(df_robot['Time_rel'],df_robot['TCP_y']*100, label = 'arm pos in y[cm]', color = 'pink')
+            ax.plot(df_robot['Time_rel'],df_robot['TCP_z']*100, label = 'arm pos in z[cm]', color = 'purple')
+        except Exception as e:
+            print(f"ERROR robot plotting:", e)
     ax.set_ylim([-20,20])
     return ax
 
@@ -152,18 +162,25 @@ def plot_robot_speed(df_robot):
     plt.plot(df_robot['Time_rel'],df_robot['d_y'], label = 'arm speed in y [cm/s]', color = 'blue')
     plt.plot(df_robot['Time_rel'],df_robot['d_z'], label = 'arm speed in z [cm/s]', color = 'purple')
 
-def comare(path_list):
-    tot = len(path_list)
-    fig, axs = plt.subplots(tot, 1, sharex=True, figsize=(10,4*tot))
-    for i in range(tot):
-        slip = path_list[i].slip
-        rob = path_list[i].robo
-        load = path_list[i].load
-        subplot_hist_sensors_robot(file_slip=slip,file_robot=rob, file_load=load, ax=axs[i])
-        axs[i].set_title(f"plot{i}")
-    axs[0].legend(loc="upper right")
-    fig.suptitle('tracking on different surfaces (100Hz)')
+def compare(path_lists, title = "tracking on different surfaces"):
+    mode = len(path_lists)
+    tot = len(path_lists[0])
+    fig, axs = plt.subplots(tot, mode, sharex=True, figsize=(7*mode,4*tot))
+    for j in range(mode):
+        path_list = path_lists[j]
+        for i in range(tot):
+            slip = path_list[i].slip
+            rob = path_list[i].robo
+            load = path_list[i].load
+            subplot_hist_sensors_robot(file_slip=slip,file_robot=rob, file_load=load, ax=axs[i,j])
+            m = re.search(r'_\d{2}-\d{2}-\d{2}', slip)
+            if m:
+                subtitle = slip[m.end():-4]
+                axs[i,j].set_title(f"on {subtitle}")
+    axs[0,j].legend(loc="upper right")
+    fig.suptitle(title)
     fig.supxlabel('time [s]')
     fig.supylabel('sensor values')
+    plt.subplots_adjust(wspace=0.1, hspace=0.4)
     fig.savefig("figs/test_sensor_robot_compare_test.png")
     plt.show()

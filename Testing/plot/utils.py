@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import datetime as dt
 from typing import NamedTuple
+import os.path
 
 def print_freq(path, col):
     df = pd.read_csv(path)
@@ -96,8 +97,19 @@ def get_all_paths(path):
         path_ro = path
         path_ld = path_ro.replace("robot", "load")
         path_sl = path_ro.replace("robot", "slip")
+    elif "sensor" in path:
+        path_sl = path
+        path_ld = path_sl.replace("sensor", "load")
+        path_ro = path_sl.replace("sensor", "robot")
     else:
         print("ERROR: no valid path")
         return
+    
+    if not os.path.isfile(path_sl):
+        path_sl = None
+    if not os.path.isfile(path_ld):
+        path_ld = None
+    if not os.path.isfile(path_ro):
+        path_ro = None
     all_paths = Paths(path_sl, path_ld, path_ro)
     return all_paths
