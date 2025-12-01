@@ -4,6 +4,10 @@ import datetime as dt
 from typing import NamedTuple
 import os.path
 
+contact_thresh = 50
+slip_thresh_mouse = 5
+slip_thresh_ls = 5
+
 def print_freq(path, col):
     df = pd.read_csv(path)
     try:
@@ -67,7 +71,7 @@ def shear_derivative(df_load):
     diff = df_load['Shear_Force'].diff()/1000*9.81
     dt = df_load['Timestamp'].diff().dt.total_seconds()
     derivative = diff/dt
-    return derivative
+    df_load['deriv'] = derivative
 
 def arm_speed(df_robot):
     diff_x = df_robot['TCP_x'].diff()*100
@@ -113,3 +117,16 @@ def get_all_paths(path):
         path_ro = None
     all_paths = Paths(path_sl, path_ld, path_ro)
     return all_paths
+
+def detect_slip_lc(df):
+    
+    return 0
+
+def preprocessing(file_slip = None, file_robot= None, file_load = None):
+    df_slip, df_load, df_robot = synch(file_slip, file_robot, file_load)
+    shear_derivative(df_load)
+    arm_speed(df_robot)
+    moving_averge(df_slip, 5)
+    return df_slip, df_load, df_robot 
+
+

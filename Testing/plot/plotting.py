@@ -4,17 +4,15 @@ import numpy as np
 from utils import *
 import re
 
-contact_thresh = 5
-slip_thresh = 5
-
 # full plotter of all the things
 def plot_hist_sensors_robot(file_slip = None, file_robot = None, file_load = None):
-    df_slip, df_load, df_robot = synch(file_slip, file_robot, file_load)  
+    # df_slip, df_load, df_robot = synch(file_slip, file_robot, file_load)  
+    df_slip, df_load, df_robot = preprocessing(file_slip, file_robot, file_load)  
 
     plt.figure(figsize=(12,4))
     if file_slip is not None:
-        # plot_mvt(df_slip)
-        plot_slip(df_slip)
+        plot_mvt(df_slip)
+        # plot_slip(df_slip)
 
     if file_robot is not None:
         # plot_robot(df_robot)
@@ -22,6 +20,7 @@ def plot_hist_sensors_robot(file_slip = None, file_robot = None, file_load = Non
         plot_robot_speed(df_robot)
     if file_load is not None:
         plot_shear(df_load)
+        plot_shear(df_load, 'deriv')
 
     plt.xlabel('Time (s)')
     plt.ylabel('Sensor Values')
@@ -34,7 +33,7 @@ def subplot_hist_sensors_robot(ax, file_slip = None, file_robot = None, file_loa
     df_slip, df_load, df_robot = synch(file_slip, file_robot, file_load)   
     if file_slip is not None:
         try:
-            ax.plot(df_slip['Time_rel'],df_slip['contact']*5, label = 'contact', color = 'g')
+            ax.plot(df_slip['Time_rel'],df_slip['contact'], label = 'contact', color = 'g')
             ax.plot(df_slip['Time_rel'], df_slip['delta_X'], label='delta_X', color = 'teal')
             ax.plot(df_slip['Time_rel'], df_slip['delta_Y'], label='delta_Y', color = 'blue')
         except Exception as e:
@@ -53,7 +52,7 @@ def subplot_hist_sensors_robot(ax, file_slip = None, file_robot = None, file_loa
             ax.plot(df_robot['Time_rel'],df_robot['TCP_z']*100, label = 'arm pos in z[cm]', color = 'purple')
         except Exception as e:
             print(f"ERROR robot plotting:", e)
-    ax.set_ylim([-20,20])
+    ax.set_ylim([-60,60])
     return ax
 
 
@@ -129,9 +128,11 @@ def plot_xyDeltas(file):
     plt.savefig("figs/deltapath.png")
     plt.show()
 
-def plot_shear(df_load):
-    if 'deriv' in df_load.columns:
+def plot_shear(df_load, mode = None):
+    if mode == 'deriv':
             plt.plot(df_load['Time_rel'],df_load['deriv'], label = 'derviative Shear [1 N/s]', color = 'coral')
+            df_load['slip'] = df_slip['mvt'].apply(lambda x: 1 if x >slip_thresh_mouse else 0)
+
     plt.plot(df_load['Time_rel'],df_load['Shear_Force']/1000*9.81 * 10, label = 'LC Shear Force [0.1 N]', color = 'orange')
 
 def plot_lc(df_load):
@@ -139,17 +140,18 @@ def plot_lc(df_load):
     plt.scatter(df_load['Time_rel'],df_load['Normal_Force']/1000*9.81, label = 'LC Normal Force [1 N]', color = 'coral', marker= '+')
 
 def plot_slip(df_slip):
+    # plt.plot(df_slip['Time_rel'],df_slip['contact']*5, label = 'contact', color = 'lime')
     df_slip['contact'] = df_slip['contact'].apply(lambda x: 1 if x >contact_thresh else 0)
     plt.plot(df_slip['Time_rel'],df_slip['contact']*5, label = 'contact', color = 'g')
     plt.plot(df_slip['Time_rel'], df_slip['delta_X'], label='delta_X', color = 'teal')
-    plt.plot(df_slip['Time_rel'], df_slip['delta_Y'], label='delta_Y', color = 'blue')
+    plt.plot(df_slip['Time_rel'], df_slip['delta_Y'], label='delta_Y', color = 'lightblue')
 
 def plot_mvt(df_slip):
-    df_slip['mvt'] = np.sqrt(df_slip['delta_X'] **2 + df_slip['delta_Y']**2)
-    df_slip['contact'] = df_slip['contact'].apply(lambda x: 1 if x > contact_thresh else 0)
     plt.plot(df_slip['Time_rel'],df_slip['contact']*5, label = 'contact', color = 'g')
-    plt.plot(df_slip['Time_rel'], df_slip['mvt'], label='mvt', color = 'blue')
-
+    df_slip['mvt'] = np.sqrt(df_slip['delta_X'] **2 + df_slip['delta_Y']**2)
+    df_slip['slip'] = df_slip['mvt'].apply(lambda x: 1 if x >slip_thresh_mouse else 0)
+    plt.plot(df_slip['Time_rel'], df_slip['slip']*10, label='slip detected', color = 'red')
+    # plt.plot(df_slip['Time_rel'], df_slip['mvt'], label='mvt', color = 'lightblue')
 
 def plot_robot(df_robot):
     plt.plot(df_robot['Time_rel'],df_robot['TCP_x']*100, label = 'arm pos in x [cm]', color = 'm')
@@ -166,21 +168,36 @@ def compare(path_lists, title = "tracking on different surfaces"):
     mode = len(path_lists)
     tot = len(path_lists[0])
     fig, axs = plt.subplots(tot, mode, sharex=True, figsize=(7*mode,4*tot))
-    for j in range(mode):
-        path_list = path_lists[j]
+    if mode == 1: 
+        path_list = path_lists[0]
         for i in range(tot):
             slip = path_list[i].slip
             rob = path_list[i].robo
             load = path_list[i].load
-            subplot_hist_sensors_robot(file_slip=slip,file_robot=rob, file_load=load, ax=axs[i,j])
+            subplot_hist_sensors_robot(file_slip=slip,file_robot=rob, file_load=load, ax=axs[i])
             m = re.search(r'_\d{2}-\d{2}-\d{2}', slip)
             if m:
                 subtitle = slip[m.end():-4]
-                axs[i,j].set_title(f"on {subtitle}")
-    axs[0,j].legend(loc="upper right")
+                axs[i].set_title(f"on {subtitle}")
+        axs[0].legend(loc="upper right")
+    else:
+        for j in range(mode):
+            path_list = path_lists[j]
+            for i in range(tot):
+                slip = path_list[i].slip
+                rob = path_list[i].robo
+                load = path_list[i].load
+                subplot_hist_sensors_robot(file_slip=slip,file_robot=rob, file_load=load, ax=axs[i,j])
+                m = re.search(r'_\d{2}-\d{2}-\d{2}', slip)
+                if m:
+                    subtitle = slip[m.end():-4]
+                    axs[i,j].set_title(f"on {subtitle}")
+        axs[0,j].legend(loc="upper right")
     fig.suptitle(title)
     fig.supxlabel('time [s]')
     fig.supylabel('sensor values')
     plt.subplots_adjust(wspace=0.1, hspace=0.4)
     fig.savefig("figs/test_sensor_robot_compare_test.png")
     plt.show()
+
+
