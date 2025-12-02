@@ -10,7 +10,7 @@ COLUMNS = {'slip': ['Timestamp','Time', 'contact', 'delta_X', 'delta_Y'],
 CONNECTIONS = {'slip' : True, 'robot': True, 'loadcell': True }
 
 SAVE_PATH = 'logs'
-LOG_TIME = 30           # maximum logtime before terminating in seconds
+LOG_TIME = 12           # maximum logtime before terminating in seconds
 PLOT = True
 UR_IP = '169.254.20.10'
 SURFACE = 'plastic_80hz'

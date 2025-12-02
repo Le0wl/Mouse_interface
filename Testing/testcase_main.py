@@ -46,9 +46,9 @@ def main():
     # initiation of all the things
     dt = datetime.datetime
     os.makedirs(SAVE_PATH, exist_ok=True)
-    filename_slip = os.path.join(SAVE_PATH, f"slip_log_{dt.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
-    filename_load = os.path.join(SAVE_PATH, f"load_log_{dt.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
-    filename_robo = os.path.join(SAVE_PATH, f"robot_log_{dt.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
+    filename_slip = os.path.join(SAVE_PATH, f"slip/slip_log_{dt.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
+    filename_load = os.path.join(SAVE_PATH, f"loadcell/load_log_{dt.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
+    filename_robo = os.path.join(SAVE_PATH, f"robot/robot_log_{dt.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
     ur, thread_robo = init_robot()
     
     # thread stuff 

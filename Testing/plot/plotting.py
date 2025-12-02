@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-from utils import *
+from plot.utils import *
 import re
 
 # full plotter of all the things
@@ -200,4 +200,21 @@ def compare(path_lists, title = "tracking on different surfaces"):
     fig.savefig("figs/test_sensor_robot_compare_test.png")
     plt.show()
 
+
+def plot_markerpos(log1, log2, log3, log4):
+    df1, df2, df3, df4 = marker_data_pross(log1, log2, log3, log4)
+
+    # plt.plot(df1['Time_rel'],df1['x']*100, label = 'aruco marker1 in x', color = 'pink')
+    # plt.plot(df1['Time_rel'],df1['y']*100, label = 'aruco marker1 in y', color = 'coral')
+
+    plt.plot(df2['Time_rel'],df2['x']*100, label = 'aruco marker2 in x', color = 'blue')
+    plt.plot(df2['Time_rel'],df2['y']*100, label = 'aruco marker2 in y', color = 'teal')
+
+    plt.plot(df3['Time_rel'],df3['x']*100, label = 'aruco marker3 in x', color = 'orange')
+    plt.plot(df3['Time_rel'],df3['y']*100, label = 'aruco marker3 in y', color = 'red')
+
+    plt.plot(df4['Time_rel'],df4['x']*100, label = 'aruco marker4 in x', color = 'violet')
+    plt.plot(df4['Time_rel'],df4['y']*100, label = 'aruco marker4 in y', color = 'purple')
+    plt.legend()
+    plt.show()
 

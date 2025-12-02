@@ -37,6 +37,8 @@ def rel_time(filename, col):
 
 def convert_time_format(filename, col):
     df = pd.read_csv(filename)
+    if df.empty:
+        return None, None
     df[col] = pd.to_datetime(df[col], format='%Y-%m-%d %H:%M:%S.%f')
     start_time = df[col].iloc[0]
     return df, start_time
@@ -129,4 +131,31 @@ def preprocessing(file_slip = None, file_robot= None, file_load = None):
     moving_averge(df_slip, 5)
     return df_slip, df_load, df_robot 
 
+def marker_speed():
+    diff_x = df_robot['TCP_x'].diff()*100
+    diff_y = df_robot['TCP_y'].diff()*100
+    diff_z = df_robot['TCP_z'].diff()*100
+    dt = df_robot['Time'].diff().dt.total_seconds()
+    deri_x = diff_x/dt
+    deri_y = diff_y/dt
+    deri_z = diff_z/dt
+    return deri_x, deri_y, deri_z
+
+def marker_data_pross(log1, log2, log3, log4):
+    df1, t10 = convert_time_format(log1, 'Timestamp')
+    df2, t20 = convert_time_format(log2, 'Timestamp')
+    df3, t30 = convert_time_format(log3, 'Timestamp')
+    df4, t40 = convert_time_format(log4, 'Timestamp')
+    starts = [t40, t20, t30]
+    t0 = min(starts)
+    # df1['Time_rel'] = (df1['Timestamp'] - t0).dt.total_seconds()
+    df2['Time_rel'] = (df2['Timestamp'] - t0).dt.total_seconds()
+    df3['Time_rel'] = (df3['Timestamp'] - t0).dt.total_seconds()
+    df4['Time_rel'] = (df4['Timestamp'] - t0).dt.total_seconds()
+
+    df3.set_index('Timestamp')['x'].subtract(df2.set_index('Timestamp')['x'], fill_value=0)
+    df4.set_index('Timestamp')['x'].subtract(df2.set_index('Timestamp')['x'], fill_value=0)
+    df3.set_index('Timestamp')['y'].subtract(df2.set_index('Timestamp')['y'], fill_value=0)
+    df4.set_index('Timestamp')['y'].subtract(df2.set_index('Timestamp')['y'], fill_value=0)
+    return df1, df2, df3, df4
 

@@ -1,4 +1,6 @@
 logs/
 figs/
+frames/
+vids/
 .conda/
 **/__pycache__/

@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import csv
 import datetime as datetime
 
-
+show = True
+source = 'vids/output.avi'
 class ArucoMarker:
     """
     This class represents an ArUco marker. 
@@ -17,7 +18,7 @@ class ArucoMarker:
         self.marker_size = 200
 
         self.marker_id = marker_id
-        self.logfile = open(f"logs/marker_{marker_id}_log.csv", "w", newline="")
+        self.logfile = open(f"logs/marker/marker_{marker_id}_log.csv", "w", newline="")
         self.logger = csv.writer(self.logfile)
         self.logger.writerow(["Timestamp", "frame", "x", "y"])
         self.frame_count = 0
@@ -25,8 +26,8 @@ class ArucoMarker:
         self.parameters = cv2.aruco.DetectorParameters_create() if hasattr(cv2.aruco, 'DetectorParameters_create') else cv2.aruco.DetectorParameters()
         
 
-    def update_marker(self, frame):
-
+    def update_marker(self, frame, frame_count):
+        timestamp = datetime.datetime.now()
         # Camera parameters
         focal_length = 1000  
         center = (frame.shape[1] / 2, frame.shape[0] / 2)  # Center of the frame
@@ -56,40 +57,70 @@ class ArucoMarker:
             angle = np.degrees(angle) + 90
             self.pos = axis_points[0].ravel()
             frame = cv2.circle(frame, tuple(self.pos), 3, (0, 255, 0), -1)
-            self.frame_count += 1
-            dt = datetime.datetime
-            self.logger.writerow([dt.now(), self.frame_count, self.pos[0], self.pos[1]])
+            self.logger.writerow([timestamp, frame_count, self.pos[0], self.pos[1]])
     
         return frame
     
     
     
 def main_vision(*markers):
-   
-    cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
- 
+    frame_count = 0
+    cap = cv2.VideoCapture(source)
+
+    # Check if the video file was opened successfully
     if not cap.isOpened():
-        print("Cannot open camera")
-        return
+        print("Error: Unable to open video file")
+        exit()
     
     while True:
         ret, frame = cap.read()
         if not ret:
             print("Can't receive frame (stream end?). Exiting ...")
             break
-    
+        frame_count +=1
         for marker in markers:
-            frame = marker.update_marker(frame)
+            frame = marker.update_marker(frame, frame_count)
     
+        if show:
+            cv2.imshow('Markers Detection', frame)
 
-        cv2.imshow('Markers Detection', frame)
-
-        if cv2.waitKey(1) == ord('q'):  # Press 'q' to exit
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     cap.release()
     cv2.destroyAllWindows()
 
-markers = [ArucoMarker(marker_id) for marker_id in range(1, 6)]  # Create instances for each ArUco marker
+# def main_vision(*markers):   #to check FPS
+   
+#     cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+ 
+#     if not cap.isOpened():
+#         print("Cannot open camera")
+#         return
+
+#     import time
+#     fps_last_time = time.time()
+#     fps_count = 0
+    
+#     while True:
+#         ret, frame = cap.read()
+#         cv2.imshow('Markers Detection', frame)
+
+#         # ---- FPS measurement ----
+#         fps_count += 1
+#         now = time.time()
+#         if now - fps_last_time >= 1.0:
+#             print(f"FPS: {fps_count}")
+#             fps_count = 0
+#             fps_last_time = now
+#         # --------------------------
+
+#         if cv2.waitKey(1) & 0xFF == ord('q'):
+#             break
+
+#     cap.release()
+#     cv2.destroyAllWindows()
+
+markers = [ArucoMarker(marker_id) for marker_id in range(1, 5)]  # Create instances for each ArUco marker
 
 main_vision(*markers)

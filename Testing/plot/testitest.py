@@ -21,7 +21,8 @@ run3 = get_all_paths('logs/robot_log_2025-11-23_19-50-44plastic_bad_contact.csv'
 # plot_average(file_load=path_lc, file_slip=path_sl, file_robot=path_ro)
 # print_freq(path_sl, 'Timestamp')
 # plot_load_ideas(file_lc=path_lc, file_ro=path_ro, file_sl=path_sl)
-print_freq('marker_3_log.csv', 'Timestamp')
+print_freq('logs/marker_3_log.csv', 'Timestamp')
+# plot_markerpos('logs/marker_1_log.csv', 'logs/marker_2_log.csv', 'logs/marker_3_log.csv', 'logs/marker_4_log.csv')
 
 # hat = get_all_paths('logs/sensor_log_2025-11-13_11-02-34hat.csv')
 # paper = get_all_paths('logs/sensor_log_2025-11-13_10-44-20paper.csv' )
