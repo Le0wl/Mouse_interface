@@ -6,6 +6,8 @@ from plot.plotting import *
 from slipsensor.sensor_log_thread import *
 from loadcell.loadcell_log_thread import * 
 from config import *
+from vision.capture import *
+from vision.marker_detection import *
 
 def serial_logger(name, filename, log_ready_event, timing, timing_lock, stop_event):
     try:
@@ -57,22 +59,28 @@ def main():
     stop_event = threading.Event()
     slip_log_ready_event = threading.Event()
     load_log_ready_event = threading.Event()
+    camera_ready_event = threading.Event()
+    video_file = [None]
 
     slip_log_thread = threading.Thread(target=serial_logger, args=('slip', filename_slip, slip_log_ready_event, timing, timing_lock, stop_event))
     load_log_thread = threading.Thread(target=serial_logger, args=('loadcell', filename_load, load_log_ready_event, timing, timing_lock, stop_event))
     motion_thread = threading.Thread(target=move_robot, args=(ur, timing, timing_lock))
     robo_log_thread = threading.Thread(target=log_robo, args=(ur, filename_robo, stop_event, timing))
-    
+    camera_thread = threading.Thread(target = film_thread, args=(camera_ready_event,stop_event,  video_file))
+
     # log go
     ready = []
     if (CONNECTIONS['slip']):
-        print('eyyo')
         slip_log_thread.start()
         ready.append(slip_log_ready_event)
 
     if (CONNECTIONS['loadcell']):
         load_log_thread.start()
         ready.append(load_log_ready_event)
+
+    if (CONNECTIONS['camera']):
+        camera_thread.start()
+        ready.append(camera_ready_event)
 
     if(all(evt.wait(timeout=10) for evt in ready)): # waiting for logging set up /timeout at 10 secs 
         if thread_robo and (CONNECTIONS['slip']): # only start robo thread if the robot is connected
@@ -87,7 +95,9 @@ def main():
             load_log_thread.join()
         if (CONNECTIONS['slip']):
             slip_log_thread.join() 
-
+        if (CONNECTIONS['camera']):
+            camera_thread.join() 
+    
         to_plot = []
         # prettyfy data 
         if ('slip_start_log'in timing):
@@ -111,8 +121,15 @@ def main():
         else:
             print('no load logging happened')
 
+        if (CONNECTIONS['camera']):
+            files = marker_logging(video_file[0])
+            print('marker logging finished')
+            for file in files:
+                to_plot.append(file)
+
         if PLOT:
-            plot_hist_sensors_robot(*to_plot)
+            plot_vid_slip(*to_plot)
+            # plot_hist_sensors_robot(*to_plot)
     else: 
         print("ERROR: Logging setup did not complete within 10 seconds. Terminating.")
         stop_event.set()

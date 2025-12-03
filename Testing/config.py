@@ -7,13 +7,15 @@ COLUMNS = {'slip': ['Timestamp','Time', 'contact', 'delta_X', 'delta_Y'],
            'loadcell': ["Timestamp", "Shear_Force"]} #normal forche after if there
 
 #connections
-CONNECTIONS = {'slip' : True, 'robot': True, 'loadcell': True }
+CONNECTIONS = {'slip' : True, 'robot': False, 'loadcell': False, 'camera': True }
 
 SAVE_PATH = 'logs'
-LOG_TIME = 12           # maximum logtime before terminating in seconds
-PLOT = True
+LOG_TIME = 40           # maximum logtime before terminating in seconds
+PLOT = False
 UR_IP = '169.254.20.10'
-SURFACE = 'plastic_80hz'
+SURFACE = 'sync_with_cam'
+CAM_FPS = 180.0
+SHOW = True
 MOVE = [                        # list of relative waypoints
     [0, -0.04, 0,  0, 0, 0],    # forward
     [0, 0, 0.04,  0, 0, 0],     # up (4cm)

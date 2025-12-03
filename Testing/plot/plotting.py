@@ -1,18 +1,19 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.animation as animation
 from plot.utils import *
 import re
 
 # full plotter of all the things
 def plot_hist_sensors_robot(file_slip = None, file_robot = None, file_load = None):
-    # df_slip, df_load, df_robot = synch(file_slip, file_robot, file_load)  
-    df_slip, df_load, df_robot = preprocessing(file_slip, file_robot, file_load)  
+    df_slip, df_load, df_robot = synch(file_slip, file_robot, file_load)  
+    # df_slip, df_load, df_robot = preprocessing(file_slip, file_robot, file_load)  
 
     plt.figure(figsize=(12,4))
     if file_slip is not None:
-        plot_mvt(df_slip)
-        # plot_slip(df_slip)
+        # plot_mvt(df_slip)
+        plot_slip(df_slip)
 
     if file_robot is not None:
         # plot_robot(df_robot)
@@ -20,7 +21,7 @@ def plot_hist_sensors_robot(file_slip = None, file_robot = None, file_load = Non
         plot_robot_speed(df_robot)
     if file_load is not None:
         plot_shear(df_load)
-        plot_shear(df_load, 'deriv')
+        # plot_shear(df_load, 'deriv')
 
     plt.xlabel('Time (s)')
     plt.ylabel('Sensor Values')
@@ -202,19 +203,58 @@ def compare(path_lists, title = "tracking on different surfaces"):
 
 
 def plot_markerpos(log1, log2, log3, log4):
-    df1, df2, df3, df4 = marker_data_pross(log1, log2, log3, log4)
+    # df1, df2, df3, df4 = marker_data_pross(log1, log2, log3, log4)
+    df = marker_panda(log1, log2, log3, log4)
+    # plt.scatter(df1['Time_rel'],df1['x'], label = 'aruco marker1 in x', color = 'pink', marker='+')
+    # # plt.scatter(df1['Time_rel'],df1['y'], label = 'aruco marker1 in y', color = 'coral', marker='+')
 
-    # plt.plot(df1['Time_rel'],df1['x']*100, label = 'aruco marker1 in x', color = 'pink')
-    # plt.plot(df1['Time_rel'],df1['y']*100, label = 'aruco marker1 in y', color = 'coral')
+    # plt.scatter(df2['Time_rel'],df2['x'], label = 'aruco marker2 in x', color = 'blue', marker='+')
+    # # plt.scatter(df2['Time_rel'],df2['y'], label = 'aruco marker2 in y', color = 'teal', marker='+')
 
-    plt.plot(df2['Time_rel'],df2['x']*100, label = 'aruco marker2 in x', color = 'blue')
-    plt.plot(df2['Time_rel'],df2['y']*100, label = 'aruco marker2 in y', color = 'teal')
+    # plt.scatter(df3['Time_rel'],df3['x'], label = 'aruco marker3 in x', color = 'orange', marker='+')
+    # # plt.scatter(df3['Time_rel'],df3['y'], label = 'aruco marker3 in y', color = 'red', marker='+')
 
-    plt.plot(df3['Time_rel'],df3['x']*100, label = 'aruco marker3 in x', color = 'orange')
-    plt.plot(df3['Time_rel'],df3['y']*100, label = 'aruco marker3 in y', color = 'red')
+    # plt.scatter(df4['Time_rel'],df4['x'], label = 'aruco marker4 in x', color = 'violet', marker='+')
+    # # plt.scatter(df4['Time_rel'],df4['y'], label = 'aruco marker4 in y', color = 'purple', marker='+')
 
-    plt.plot(df4['Time_rel'],df4['x']*100, label = 'aruco marker4 in x', color = 'violet')
-    plt.plot(df4['Time_rel'],df4['y']*100, label = 'aruco marker4 in y', color = 'purple')
+    plt.scatter(df['Time_rel'],df['x0'], label = 'aruco marker1 in x', color = 'pink', marker='+')
+    plt.scatter(df['Time_rel'],df['x1'], label = 'aruco marker2 in x', color = 'blue', marker='+')
+    plt.scatter(df['Time_rel'],df['x2'], label = 'aruco marker3 in x', color = 'orange', marker='+')
+    plt.scatter(df['Time_rel'],df['x3'], label = 'aruco marker4 in x', color = 'violet', marker='+')
     plt.legend()
     plt.show()
+    plt.plot(df['Time_rel'],df['delta_x0'], label = 'speed marker1', color = 'pink')
+    plt.plot(df['Time_rel'],df['delta_x1'], label = 'speed marker2', color = 'blue')
+    plt.plot(df['Time_rel'],df['delta_x2'], label = 'speed marker3', color = 'orange')
+    plt.legend()
+    plt.show()
+
+def marker_path(*files):
+    plt.figure(figsize=(5,4))
+    for file in files:
+        df_marker = pd.read_csv(file)
+        plt.scatter(df_marker['x'], -df_marker['y'], marker='+')
+    plt.xlabel('X position mm')
+    plt.ylabel('Y position mm')
+    plt.title('2D Motion Path ')
+    plt.grid(True)
+    plt.xlim([0,640])
+    plt.ylim([-360,0])
+    plt.tight_layout()
+    plt.savefig("figs/path_mm.png")
+    plt.show()
+
+
+def plot_vid_slip(slip_path, m1_path,  m2_path,  m3_path,  m4_path):
+    df_slip, df_marker= vid_synch(slip_path, m1_path,  m2_path,  m3_path,  m4_path) 
+    plot_marker(df_marker)
+    plot_slip(df_slip)
+    plt.legend()
+    plt.show()
+
+def plot_marker(df):
+    plt.scatter(df['Time_rel'],df['dx0']/10, label = 'marker arm1 in x', color = 'pink', marker='+')
+    plt.scatter(df['Time_rel'],df['dx1']/10, label = 'marker arm2 in x', color = 'blue', marker='+')
+    plt.scatter(df['Time_rel'],df['dx2']/10, label = 'marker sled in x', color = 'orange', marker='+')
+    plt.scatter(df['Time_rel'],df['dx3']/10, label = 'marker static in x', color = 'violet', marker='+')
 

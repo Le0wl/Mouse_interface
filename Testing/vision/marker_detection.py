@@ -2,23 +2,23 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
+import re
+import pandas as pd
 import datetime as datetime
+from config import *
 
-show = True
-source = 'vids/output.avi'
 class ArucoMarker:
     """
     This class represents an ArUco marker. 
     """
 
-    def __init__(self, marker_id):
+    def __init__(self, marker_id, start_time):
 
         self.pos = np.array([0, 0])
         self.angle = 0
-        self.marker_size = 200
-
+        self.marker_size = 20 # 20mm
         self.marker_id = marker_id
-        self.logfile = open(f"logs/marker/marker_{marker_id}_log.csv", "w", newline="")
+        self.logfile = open(f"logs/marker/marker_{marker_id}_log{start_time.strftime('%Y-%m-%d_%H-%M-%S')}.csv", "w", newline="")
         self.logger = csv.writer(self.logfile)
         self.logger.writerow(["Timestamp", "frame", "x", "y"])
         self.frame_count = 0
@@ -26,10 +26,11 @@ class ArucoMarker:
         self.parameters = cv2.aruco.DetectorParameters_create() if hasattr(cv2.aruco, 'DetectorParameters_create') else cv2.aruco.DetectorParameters()
         
 
-    def update_marker(self, frame, frame_count):
-        timestamp = datetime.datetime.now()
+    def update_marker(self, frame, frame_count, start_time):
+        timestamp = start_time + datetime.timedelta(seconds= frame_count / CAM_FPS)
+
         # Camera parameters
-        focal_length = 1000  
+        focal_length = 1 
         center = (frame.shape[1] / 2, frame.shape[0] / 2)  # Center of the frame
 
         # Camera matrix 
@@ -44,7 +45,6 @@ class ArucoMarker:
         if ids is not None and self.marker_id in ids:
             idx = np.where(ids == self.marker_id)[0][0]
             rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners[idx], self.marker_size, cameraMatrix, distCoeffs)
-
 
             self.marker_pxl_size = np.linalg.norm(corners[idx][0][0] - corners[idx][0][1])
 
@@ -63,10 +63,15 @@ class ArucoMarker:
     
     
     
-def main_vision(*markers):
+def marker_logging(source):
+    match = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d{6}', source)
+    start_time = datetime.datetime.strptime(match.group(), '%Y-%m-%d_%H-%M-%S-%f')
+    markers = [ArucoMarker(marker_id, start_time) for marker_id in range(1, 5)]  # Create instances for each ArUco marker
+
     frame_count = 0
     cap = cv2.VideoCapture(source)
-
+    length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    last_reported = -1
     # Check if the video file was opened successfully
     if not cap.isOpened():
         print("Error: Unable to open video file")
@@ -75,52 +80,27 @@ def main_vision(*markers):
     while True:
         ret, frame = cap.read()
         if not ret:
-            print("Can't receive frame (stream end?). Exiting ...")
+            print("Can't receive frame (video end?). Exiting ...")
             break
         frame_count +=1
         for marker in markers:
-            frame = marker.update_marker(frame, frame_count)
+            frame = marker.update_marker(frame, frame_count, start_time)
     
-        if show:
+        if SHOW:
             cv2.imshow('Markers Detection', frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+        percent = int((frame_count / length) * 100)
+        if percent // 10 != last_reported and percent % 10 == 0:
+            print(f'progress was made {percent}%')
+            last_reported = percent // 10
 
     cap.release()
     cv2.destroyAllWindows()
+    files= []
+    for marker in markers:
+        files.append(marker.logfile)
+    return files
 
-# def main_vision(*markers):   #to check FPS
-   
-#     cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
- 
-#     if not cap.isOpened():
-#         print("Cannot open camera")
-#         return
 
-#     import time
-#     fps_last_time = time.time()
-#     fps_count = 0
-    
-#     while True:
-#         ret, frame = cap.read()
-#         cv2.imshow('Markers Detection', frame)
-
-#         # ---- FPS measurement ----
-#         fps_count += 1
-#         now = time.time()
-#         if now - fps_last_time >= 1.0:
-#             print(f"FPS: {fps_count}")
-#             fps_count = 0
-#             fps_last_time = now
-#         # --------------------------
-
-#         if cv2.waitKey(1) & 0xFF == ord('q'):
-#             break
-
-#     cap.release()
-#     cv2.destroyAllWindows()
-
-markers = [ArucoMarker(marker_id) for marker_id in range(1, 5)]  # Create instances for each ArUco marker
-
-main_vision(*markers)
