@@ -3,14 +3,14 @@
 ARDUINO_PORT = {'slip': 'COM7', 'loadcell': 'COM9'}
 BAUD_RATE = {'slip': 500000, 'loadcell': 115200}
 
-COLUMNS = {'slip': ['Timestamp','Time', 'contact', 'delta_X', 'delta_Y'],
+COLUMNS = {'slip': ['Timestamp','Arduino_Time', 'contact', 'delta_X', 'delta_Y'],
            'loadcell': ["Timestamp", "Shear_Force"]} #normal forche after if there
 
 #connections
 CONNECTIONS = {'slip' : True, 'robot': False, 'loadcell': False, 'camera': True }
 
 SAVE_PATH = 'logs'
-LOG_TIME = 40           # maximum logtime before terminating in seconds
+LOG_TIME = 20           # maximum logtime before terminating in seconds
 PLOT = False
 UR_IP = '169.254.20.10'
 SURFACE = 'sync_with_cam'
@@ -30,7 +30,8 @@ MOVE = [                        # list of relative waypoints
     [0, 0.04, -0.01,  0, 0, 0],     # diagonal backward/down
     [0, 0.02, 0,  0, 0, 0],         
     ]
-
+# setup things: arucos that are squares with sides of 15mm or more work well, 
+# distance to the camera around 30 cm test the detection before doing a long run
 # data we get: slip vs float vs contact
 # reapeat. 
 # full flat (perfect contact), 

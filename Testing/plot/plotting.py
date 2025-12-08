@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.animation as animation
 from plot.utils import *
 import re
+import datetime
 
 # full plotter of all the things
 def plot_hist_sensors_robot(file_slip = None, file_robot = None, file_load = None):
@@ -143,16 +144,18 @@ def plot_lc(df_load):
 def plot_slip(df_slip):
     # plt.plot(df_slip['Time_rel'],df_slip['contact']*5, label = 'contact', color = 'lime')
     df_slip['contact'] = df_slip['contact'].apply(lambda x: 1 if x >contact_thresh else 0)
-    plt.plot(df_slip['Time_rel'],df_slip['contact']*5, label = 'contact', color = 'g')
-    plt.plot(df_slip['Time_rel'], df_slip['delta_X'], label='delta_X', color = 'teal')
-    plt.plot(df_slip['Time_rel'], df_slip['delta_Y'], label='delta_Y', color = 'lightblue')
+    plt.plot(df_slip['Sync_Time'],df_slip['contact']*5, label = 'contact', color = 'g')
+    plt.plot(df_slip['Sync_Time'], df_slip['delta_X'], label='delta_X', color = 'teal')
+    plt.plot(df_slip['Sync_Time'], df_slip['delta_Y'], label='delta_Y', color = 'lightblue')
 
 def plot_mvt(df_slip):
-    plt.plot(df_slip['Time_rel'],df_slip['contact']*5, label = 'contact', color = 'g')
+    df_slip['contact'] = df_slip['contact'].apply(lambda x: True if x >contact_thresh else False)
+    # plt.plot(df_slip['Time'],df_slip['contact']*5, label = 'contact', color = 'g')
     df_slip['mvt'] = np.sqrt(df_slip['delta_X'] **2 + df_slip['delta_Y']**2)
-    df_slip['slip'] = df_slip['mvt'].apply(lambda x: 1 if x >slip_thresh_mouse else 0)
-    plt.plot(df_slip['Time_rel'], df_slip['slip']*10, label='slip detected', color = 'red')
-    # plt.plot(df_slip['Time_rel'], df_slip['mvt'], label='mvt', color = 'lightblue')
+    df_slip['slip'] = df_slip['mvt'].apply(lambda x: True if x >slip_thresh_mouse else False)
+    df_slip['slip'] = df_slip['slip'] & df_slip['contact']
+    # plt.plot(df_slip['Time'], df_slip['slip']*10, label='slip detected', color = 'red')
+    plt.plot(df_slip['Time'], df_slip['mvt'], label='mvt', color = 'g')
 
 def plot_robot(df_robot):
     plt.plot(df_robot['Time_rel'],df_robot['TCP_x']*100, label = 'arm pos in x [cm]', color = 'm')
@@ -205,17 +208,6 @@ def compare(path_lists, title = "tracking on different surfaces"):
 def plot_markerpos(log1, log2, log3, log4):
     # df1, df2, df3, df4 = marker_data_pross(log1, log2, log3, log4)
     df = marker_panda(log1, log2, log3, log4)
-    # plt.scatter(df1['Time_rel'],df1['x'], label = 'aruco marker1 in x', color = 'pink', marker='+')
-    # # plt.scatter(df1['Time_rel'],df1['y'], label = 'aruco marker1 in y', color = 'coral', marker='+')
-
-    # plt.scatter(df2['Time_rel'],df2['x'], label = 'aruco marker2 in x', color = 'blue', marker='+')
-    # # plt.scatter(df2['Time_rel'],df2['y'], label = 'aruco marker2 in y', color = 'teal', marker='+')
-
-    # plt.scatter(df3['Time_rel'],df3['x'], label = 'aruco marker3 in x', color = 'orange', marker='+')
-    # # plt.scatter(df3['Time_rel'],df3['y'], label = 'aruco marker3 in y', color = 'red', marker='+')
-
-    # plt.scatter(df4['Time_rel'],df4['x'], label = 'aruco marker4 in x', color = 'violet', marker='+')
-    # # plt.scatter(df4['Time_rel'],df4['y'], label = 'aruco marker4 in y', color = 'purple', marker='+')
 
     plt.scatter(df['Time_rel'],df['x0'], label = 'aruco marker1 in x', color = 'pink', marker='+')
     plt.scatter(df['Time_rel'],df['x1'], label = 'aruco marker2 in x', color = 'blue', marker='+')
@@ -245,16 +237,44 @@ def marker_path(*files):
     plt.show()
 
 
-def plot_vid_slip(slip_path, m1_path,  m2_path,  m3_path,  m4_path):
-    df_slip, df_marker= vid_synch(slip_path, m1_path,  m2_path,  m3_path,  m4_path) 
-    plot_marker(df_marker)
+def plot_vid_slip(slip_path, m1_path,  m2_path,  m3_path,  m4_path, mtime_path):
+    df_slip, df_marker= vid_synch(slip_path, m1_path,  m2_path,  m3_path,  m4_path, mtime_path) 
+    # df_slip = moving_averge(df_slip, 1)
+    plt.figure(figsize=(12,4))
     plot_slip(df_slip)
+    plot_marker(df_marker)
+    plt.grid()
     plt.legend()
     plt.show()
 
 def plot_marker(df):
-    plt.scatter(df['Time_rel'],df['dx0']/10, label = 'marker arm1 in x', color = 'pink', marker='+')
-    plt.scatter(df['Time_rel'],df['dx1']/10, label = 'marker arm2 in x', color = 'blue', marker='+')
-    plt.scatter(df['Time_rel'],df['dx2']/10, label = 'marker sled in x', color = 'orange', marker='+')
-    plt.scatter(df['Time_rel'],df['dx3']/10, label = 'marker static in x', color = 'violet', marker='+')
+    # df['Timestamp'] = df['Timestamp'] - pd.Timedelta(seconds= )
+    # plt.scatter(df['Time_rel'],df['dx0']/10, label = 'marker arm1 in x', color = 'pink', marker='+')
+    # plt.scatter(df['Time_rel'],df['dx1']/10, label = 'marker arm2 in x', color = 'blue', marker='+')
+    # plt.scatter(df['Time_rel'],df['dx2']/10, label = 'marker sled in x', color = 'orange', marker='+')
+    # plt.scatter(df['Time_rel'],df['dx3']/10, label = 'marker static in x', color = 'violet', marker='+')
+    plt.plot(df['Timestamp'],df['dx0']/10, label = 'marker arm1 horizonal pos', color = 'pink')
+    plt.plot(df['Timestamp'],df['dx1']/10, label = 'marker arm2 horizonal pos', color = 'blue')
+    plt.plot(df['Timestamp'],df['dx2']/10, label = 'marker sled horizonal pos', color = 'orange')
+    plt.plot(df['Timestamp'],df['dx3']/10, label = 'marker static horizonal pos', color = 'violet')
+    # plt.plot(df['Time_rel'],df['slip']/10, label = 'sled slip horizonal', color = 'orange')
+
+def compare_slip_time(filename):
+    df = pd.read_csv(filename)
+    arduino = pd.to_numeric(df['Arduino_Time'])
+    arduino = pd.to_timedelta(arduino - arduino[0], unit = "us")
+    timestamp = pd.to_datetime(df['Timestamp'])
+    timestamp_us = pd.to_timedelta(timestamp- timestamp[0], unit ="us")
+    old_time = pd.to_datetime(df["Simple_Time"])
+    old_time_us = pd.to_timedelta(old_time - timestamp[0], unit ="us")
+    new_time = pd.to_datetime(df['Sync_Time'])
+    new_time_us = pd.to_timedelta(new_time- timestamp[0], unit ="us")
+    index = range(len(df))
+    plt.plot(index, old_time_us, label ="old" )
+    plt.plot(index, new_time_us, label = "new")
+    plt.plot(index, timestamp_us, label = "stamp")
+    plt.plot(index, arduino, label = "arduino")
+    plt.legend()
+    plt.show()
+
 

@@ -1,4 +1,5 @@
 import cv2
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
@@ -20,15 +21,13 @@ class ArucoMarker:
         self.marker_id = marker_id
         self.logfile = open(f"logs/marker/marker_{marker_id}_log{start_time.strftime('%Y-%m-%d_%H-%M-%S')}.csv", "w", newline="")
         self.logger = csv.writer(self.logfile)
-        self.logger.writerow(["Timestamp", "frame", "x", "y"])
+        self.logger.writerow(["frame", "x", "y"])
         self.frame_count = 0
         self.aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
         self.parameters = cv2.aruco.DetectorParameters_create() if hasattr(cv2.aruco, 'DetectorParameters_create') else cv2.aruco.DetectorParameters()
         
 
-    def update_marker(self, frame, frame_count, start_time):
-        timestamp = start_time + datetime.timedelta(seconds= frame_count / CAM_FPS)
-
+    def update_marker(self, frame, frame_count):
         # Camera parameters
         focal_length = 1 
         center = (frame.shape[1] / 2, frame.shape[0] / 2)  # Center of the frame
@@ -57,7 +56,7 @@ class ArucoMarker:
             angle = np.degrees(angle) + 90
             self.pos = axis_points[0].ravel()
             frame = cv2.circle(frame, tuple(self.pos), 3, (0, 255, 0), -1)
-            self.logger.writerow([timestamp, frame_count, self.pos[0], self.pos[1]])
+            self.logger.writerow([frame_count, self.pos[0], self.pos[1]])
     
         return frame
     
@@ -84,7 +83,7 @@ def marker_logging(source):
             break
         frame_count +=1
         for marker in markers:
-            frame = marker.update_marker(frame, frame_count, start_time)
+            frame = marker.update_marker(frame, frame_count)
     
         if SHOW:
             cv2.imshow('Markers Detection', frame)
@@ -93,7 +92,7 @@ def marker_logging(source):
             break
         percent = int((frame_count / length) * 100)
         if percent // 10 != last_reported and percent % 10 == 0:
-            print(f'progress was made {percent}%')
+            print(f'Marker detection status {percent}%')
             last_reported = percent // 10
 
     cap.release()
@@ -103,4 +102,26 @@ def marker_logging(source):
         files.append(marker.logfile)
     return files
 
+
+def test_detection():
+
+    cap = cv2.VideoCapture(1,cv2.CAP_DSHOW)
+    markers = [ArucoMarker(marker_id, datetime.datetime.now()) for marker_id in range(1, 5)] 
+        
+    while(cap.isOpened()):
+        ret, frame = cap.read()
+        for marker in markers:
+            frame = marker.update_marker(frame, 1)
+        
+        cv2.imshow('Markers Detection', frame)
+
+        if not ret:
+            break
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+        
+
+    # Release everything if job is finished
+    cap.release()
+    cv2.destroyAllWindows()
 

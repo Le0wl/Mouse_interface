@@ -8,23 +8,26 @@ from loadcell.loadcell_log_thread import *
 from config import *
 from vision.capture import *
 from vision.marker_detection import *
+from sklearn.linear_model import RANSACRegressor, LinearRegression
+
 
 def serial_logger(name, filename, log_ready_event, timing, timing_lock, stop_event):
     try:
         dt = datetime.datetime
         ser = serial.Serial(ARDUINO_PORT[name], BAUD_RATE[name])
-        for _ in range(10):
-            ser.readline()  # flush the buffer
+        ser.reset_input_buffer()
+
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(COLUMNS[name])
             print(f"{name} Logging started for {LOG_TIME}s")
             log_ready_event.set()
-            start_time = time.time()
+            t0 = dt.now()
+            start_time = t0
             with timing_lock:
-                timing[f'{name}_start_log'] = dt.now()
+                timing[f'{name}_start_log'] = t0
             try:
-                while (not stop_event.is_set()) and ((time.time() - start_time) < LOG_TIME):
+                while (not stop_event.is_set()) and ((dt.now() - start_time).total_seconds() < LOG_TIME):
                     line = ser.readline().decode(errors='ignore').strip()
                     if line:
                         if not line.startswith("Force1(g),Force2(g)") and not line.startswith("Initializing") and not line.startswith("Load Cell") and not line.startswith("Taring") and not line.startswith("Offsets"):
@@ -38,6 +41,7 @@ def serial_logger(name, filename, log_ready_event, timing, timing_lock, stop_eve
                             except Exception as e:
                                 print(f"{name}: Unexpected error processing line '{line}': {e}")
             finally:
+                time.sleep(1)
                 ser.close()
                 print(f"{name} logging finished")
     except Exception as e:
@@ -101,7 +105,7 @@ def main():
         to_plot = []
         # prettyfy data 
         if ('slip_start_log'in timing):
-            slip_data_pross(filename_slip, timing)
+            sync_arduino_clock(filename_slip)
             print(f"Finished mouse log. File: {filename_slip}")
             to_plot.append(filename_slip)
         else:
@@ -115,7 +119,7 @@ def main():
             print('no robot logging happened')
 
         if ('loadcell_start_log'in timing):
-            load_data_pross(filename_load)
+            sync_arduino_clock(filename_load)
             print(f"Finished load log. File: {filename_load}")
             to_plot.append(filename_load)
         else:
@@ -133,6 +137,85 @@ def main():
     else: 
         print("ERROR: Logging setup did not complete within 10 seconds. Terminating.")
         stop_event.set()
+
+
+# def slip_data_pross(filename_slip, timing):
+#             df = pd.read_csv(filename_slip)
+#             df = df.fillna(0)
+#             df['Timestamp']= pd.to_datetime(df['Timestamp'])
+#             df['Arduino_Time'] = pd.to_numeric(df['Arduino_Time'])
+#             timestamps = df['Timestamp'].unique()
+#             if len(df.loc[df['Timestamp']==timestamps[0]])<3:       # clear incomplete package 
+#                 df.drop(df.loc[df['Timestamp']==timestamps[0]].index, inplace=True)
+#                 timestamps = df['Timestamp'].unique()
+#             first_package_size = len(df.loc[df['Timestamp']==timestamps[0]])
+#             df = df.iloc[first_package_size-1:]                    # keep the last value from the first timestamp and the rest
+#             start_arduino = df['Arduino_Time'].iloc[0]
+#             start_log = df['Timestamp'].iloc[0]
+#             synch_time = [start_log]
+#             for t in range(len(timestamps)-1):
+#                 package = df.loc[df['Timestamp']==timestamps[t]]
+#                 end_arduino = package['Arduino_Time'].iloc[-1]
+#                 delta_log = timestamps[t] -start_log
+#                 delta_arduino =  pd.to_timedelta(end_arduino - start_arduino, unit="us")
+#                 if (delta_log -delta_arduino)< pd.to_timedelta(1, unit="ms") and (delta_log -delta_arduino) >0:
+#                     synch_time.append(start_log + pd.to_timedelta(package["Arduino_Time"].iloc[:-1] - start_arduino, unit="us"))
+#                     synch_time.append(timestamps[t]) # realign to the master clock to prevent drift
+#                 else:
+#                     ta = package["Arduino_Time"].iloc[:-1] * delta_log/delta_arduino  # stretch time
+#                     synch_time.append(start_log + pd.to_timedelta(ta - start_arduino, unit="us"))
+#                     synch_time.append(timestamps[t])  # realign to the master clock to prevent drift
+#                 start_log = timestamps[t]
+#                 start_arduino = end_arduino
+
+#             df["Time"] = synch_time
+
+#             df.to_csv(filename_slip+"2", index=False)
+
+
+def sync_arduino_clock(filename):
+    df = pd.read_csv(filename)
+    df = df.fillna(0)
+
+    # convert master timestamps to datetime
+    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+    df["Arduino_Time"] = pd.to_numeric(df["Arduino_Time"])
+
+    # detect if first package is cut off (< 3 samples)
+    if len(df[df['Timestamp']==df['Timestamp'].iloc[0]])<3:
+        df = df[df['Timestamp']!=df['Timestamp'].iloc[0]]
+
+    # identify one reference Arduino timestamp per packet (last sample)
+    packet_last = df.groupby('Timestamp')["Arduino_Time"].last().reset_index()
+
+    # convert for fitting
+    T_master = packet_last['Timestamp'].astype('int64') * 1e-9     # seconds
+    T_arduino = packet_last["Arduino_Time"] * 1e-6                 # seconds
+
+    X = T_arduino.values.reshape(-1, 1)
+    y = T_master.values
+
+    # robust fit: eliminates latency spikes automatically
+    ransac = RANSACRegressor(
+        estimator=LinearRegression(),
+        residual_threshold=0.005,   # 5 ms tolerance for latency jitter
+        max_trials=1000,
+        random_state=0
+    )
+    ransac.fit(X, y)
+
+    b = ransac.estimator_.coef_[0]
+    a = ransac.estimator_.intercept_
+
+    # apply mapping to EVERY sample
+    df["Sync_Time"] = a + b * (df["Arduino_Time"] * 1e-6)   # seconds
+    df["Sync_Time"] = pd.to_datetime(df["Sync_Time"], unit='s')
+    df["Simple_Time"] = df["Timestamp"].iloc[0] +pd.to_timedelta(df["Arduino_Time"], unit="us")
+
+    df.to_csv(filename, index=False)
+
+    return 
+
 
 if __name__ == '__main__':
     main()

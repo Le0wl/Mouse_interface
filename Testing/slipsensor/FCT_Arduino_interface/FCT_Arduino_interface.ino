@@ -46,12 +46,15 @@
 const int SCLK = 8;
 const int SDIO = 4;
 const byte noSleep = 0xA0;
+bool logStart = false;
+
 
 void setup() {
   Serial.begin(500000); //used to be 115200
   pinMode (SCLK, OUTPUT);
   mouseInit();
   byte prodId1 = readRegister(PROD_ID1);
+  logStart = true;
   if (DEBUG) {
     Serial.print("Device ID: 0x");
     Serial.println(prodId1, HEX);
@@ -60,36 +63,65 @@ void setup() {
 }
 
 void loop() {
-  uint8_t motion = readRegister(MOTION_STATUS); // read motion status register | needs to be read for deltas to update
-  if (motion == 0xFF){
-    Serial.print("\nBad connection");
-    printMode();
-  }
-  if (DEBUG){
-    if (motion & 0x80) Serial.print("\nMoved!");   //new test for moved used to be "if(motion==0x81)"
-    else Serial.print("\nno mouvement");
-  }
-  int8_t delta_x =(int8_t) readRegister(DEL_X); // read delta x register | signed ints
-  int8_t delta_y = (int8_t) readRegister(DEL_Y); // read delta y register
-  uint8_t quali = readRegister(IMG_QUALITY);
-  unsigned long t = micros();
-  Serial.print(t); Serial.print(",");
-  if (DEBUG || PLOT_HERE) Serial.print("\n contact:");
-  Serial.print(quali); Serial.print(",");
-  if (DEBUG || PLOT_HERE) Serial.print("\n delta X:");
-  Serial.print(delta_x);  Serial.print(",");
-  if (DEBUG || PLOT_HERE) Serial.print("\n delta Y:");
-  Serial.println(delta_y); 
+  // if (!logStart && Serial.available()) {
+  //       char cmd = Serial.read();
+  //       if (cmd == '1') {  // PC requests sync
+  //           bool confirmed = false;
+  //           while (!confirmed) {
+  //               unsigned long t = micros();
+  //               int hello = 101;
+  //               Serial.print(hello);
+  //               Serial.print(",");
+  //               Serial.println(t);
 
-  int period = 1000000/FREQUENCY;
-  int delay = period - 1500; // approximate us if a cycle without added delay
-  if (delay > 0){
-    delayMicroseconds(delay); // added delay to lower the frequency
-  }  
+  //               delay(10); // small delay to avoid flooding USB
+
+  //               // check for confirmation
+  //               if (Serial.available()) {
+  //                   char ack = Serial.read();
+  //                   if (ack == '2') {  // PC confirms sync
+  //                       confirmed = true;
+  //                       logStart = true;
+  //                   }
+  //               }
+  //           }
+  //       }
+  //   }
+  if(logStart){
+    uint8_t motion = readRegister(MOTION_STATUS); // read motion status register | needs to be read for deltas to update
+    if (motion == 0xFF){
+      Serial.print("\nBad connection");
+      printMode();
+    }
+    if (DEBUG){
+      if (motion & 0x80) Serial.print("\nMoved!");   //new test for moved used to be "if(motion==0x81)"
+      else Serial.print("\nno mouvement");
+    }
+    int8_t delta_x =(int8_t) readRegister(DEL_X); // read delta x register | signed ints
+    int8_t delta_y = (int8_t) readRegister(DEL_Y); // read delta y register
+    uint8_t quali = readRegister(IMG_QUALITY);
+    unsigned long t = micros();
+    Serial.print(t); Serial.print(",");
+    if (DEBUG || PLOT_HERE) Serial.print("\n contact:");
+    Serial.print(quali); Serial.print(",");
+    if (DEBUG || PLOT_HERE) Serial.print("\n delta X:");
+    Serial.print(delta_x);  Serial.print(",");
+    if (DEBUG || PLOT_HERE) Serial.print("\n delta Y:");
+    Serial.println(delta_y); 
+
+    int period = 1000000/FREQUENCY;
+    int delay = period - 1500; // approximate us if a cycle without added delay
+    if (delay > 0){
+      delayMicroseconds(delay); // added delay to lower the frequency
+    } 
+  }
+  else{
+    Serial.println("no init");
+    delay(100);
+  } 
 }
 
-void mouseInit(void) // function to initialize optical sensor.
-{
+void mouseInit(void){ // function to initialize optical sensor.
   digitalWrite(SCLK, HIGH);
   digitalWrite(SCLK, LOW);
   delayMicroseconds(1); // tRESYNC = 1us (mentioned in datasheet)
