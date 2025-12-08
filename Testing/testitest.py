@@ -10,14 +10,13 @@ run2 = get_all_paths('logs/slip/slip_log_2025-11-23_19-44-37plastic.csv')
 
 run3 = get_all_paths('logs/robot/robot_log_2025-11-23_19-50-44plastic_bad_contact.csv')
 
-# t0 = "2025-12-08_10-20-40"
-# t1 = "2025-12-08_10-20-41"
+# t0 = "2025-12-08_11-11-35"
+# t1 = t=0
 
-t00 = "2025-12-08_09_54_31"
-t10 = "2025-12-08_09_54_32"
-
-run = get_all_paths(f'logs/slip/slip_log_{t00}sync_with_cam.csv')
-markers = get_all_markers(f'logs/marker/marker_4_log{t10}.csv')
+t0 = "2025-12-08_16-24-36"
+t1 = "2025-12-08_16-24-37"
+run = get_all_paths(f"logs/slip/slip_log_{t0}sync_with_cam.csv")
+markers = get_all_markers(f"logs/marker/marker_4_log{t1}.csv")
 
 
 plot_vid_slip(run.slip, markers.m1, markers.m2, markers.m3, markers.m4, markers.time)

@@ -5,9 +5,10 @@ from typing import NamedTuple
 import os.path
 
 contact_thresh = 50
-slip_thresh_mouse = 1
-slip_thresh_cam = 5
-slip_thresh_ls = 1
+slip_thresh_mouse = 0.3
+slip_thresh_cam = 50
+# slip_thresh_ls = 1
+window = 5
 
 class Paths(NamedTuple):
     slip: str
@@ -90,16 +91,6 @@ def vid_synch(slip_path, m1_path,  m2_path,  m3_path,  m4_path, mtime_path):
     df_marker = marker_panda(m1_path,  m2_path,  m3_path,  m4_path, mtime_path)
     start_marker = df_marker["Timestamp"].iloc[0]
     starts.append(start_marker)
-    
-    # t0 = min(starts)
-    # try:
-    #     df_slip['Time_rel'] = (df_slip['Time'] - t0).dt.total_seconds()
-    # except:
-    #     df_slip = None
-    # try:
-    #     df_marker['Time_rel'] = (df_marker['Timestamp'] - t0).dt.total_seconds()
-    # except:
-    #     df_marker = None
 
     slip_min, slip_max = df_slip["Sync_Time"].min(), df_slip["Sync_Time"].max()
     mark_min, mark_max = df_marker["Timestamp"].min(), df_marker["Timestamp"].max()
@@ -112,7 +103,6 @@ def vid_synch(slip_path, m1_path,  m2_path,  m3_path,  m4_path, mtime_path):
     df_slip_cut = df_slip[(df_slip["Sync_Time"] >= t_start) & (df_slip["Sync_Time"] <= t_end)].copy()
     df_marker_cut = df_marker[(df_marker["Timestamp"] >= t_start) & (df_marker["Timestamp"] <= t_end)].copy()
         
-
     return df_slip_cut, df_marker_cut
 
 def shear_derivative(df_load):
@@ -211,19 +201,10 @@ def preprocessing(file_slip = None, file_robot= None, file_load = None):
     return df_slip, df_load, df_robot 
 
 
-def marker_speed(df):
-    diff_x = df['x'].diff()
-    diff_y = df['y'].diff()
-    dt = df['Time_rel'].diff()
-    deri_x = diff_x/dt
-    deri_y = diff_y/dt
-    return deri_x, deri_y
-
 
 
 # aligning frames and time
 def marker_panda(*files):
-    # period = (1/180) # recorded at 180 fps
     dfs = []
     for f in files:
         try:
@@ -233,12 +214,10 @@ def marker_panda(*files):
             dfs.append(None)
     df_time = dfs[-1]
     df_markers = dfs[:-1]
-    # full set of frames across all markers
-    # all_frames = sorted(set().union(*[df["frame"].tolist() for df in dfs]))
     df_time["frame"] = df_time["frame_id"]
 
     # merge each dataframe into a single timeline, keeping NaN where marker missing
-    merged = df_time #pd.DataFrame({"frame": all_frames})
+    merged = df_time.copy() 
     for i, df in enumerate(df_markers): 
         merged = merged.merge(df[["frame","x","y"]].rename(
             columns={"x":f"x{i}", "y":f"y{i}"}),
@@ -253,7 +232,7 @@ def marker_panda(*files):
     for i in range(len(df_markers)):  
         df[f"dx{i}"] = df[f"x{i}"] - get_starting_pos(df[f"x{i}"])
     
-    df["slip"] = get_derivative(df["dx3"])
+    df= get_speed(df)
 
     df = df.reset_index()
     df.to_csv("test", index=False)
@@ -265,10 +244,26 @@ def get_starting_pos(col):
     start_pos = col.iloc[start]
     return start_pos
 
-def get_derivative(col):
-    col_smooth = col.interpolate(method='index')
-    col_speed = col_smooth.diff()/(1/180)
-    return col_speed
 
+def get_speed(df):
+    col = df["dx2"].copy()
+    col.index = pd.to_datetime(df["Timestamp"])
+    col_smooth = col.interpolate(method='time')
+    col_smooth = col_smooth.rolling(window).mean()
+    df = df.set_index("Timestamp")  # key fix
 
+    dt = col_smooth.index.to_series().diff().dt.total_seconds()
+    df["speed"] = col_smooth.diff() / dt
+
+    df["slip"] = (np.abs(df["speed"]) > slip_thresh_cam).astype(int)
+    return df
+
+def slip_detection(df):
+    df['contact'] = df['contact'].rolling(window).mean() 
+    df['contact'] = df['contact'].apply(lambda x: True if x >contact_thresh else False)
+    df['mvt'] = np.sqrt(df['delta_X'] **2 + df['delta_Y']**2)
+    df['mvt'] = df['mvt'].rolling(window).mean() 
+    df['slip'] = df['mvt'].apply(lambda x: True if x > slip_thresh_mouse else False)
+    df['slip'] = df['slip'] & df['contact']
+    return df
   

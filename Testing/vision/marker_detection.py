@@ -17,7 +17,7 @@ class ArucoMarker:
 
         self.pos = np.array([0, 0])
         self.angle = 0
-        self.marker_size = 20 # 20mm
+        self.marker_size = 15 # 15mm
         self.marker_id = marker_id
         self.logfile = open(f"logs/marker/marker_{marker_id}_log{start_time.strftime('%Y-%m-%d_%H-%M-%S')}.csv", "w", newline="")
         self.logger = csv.writer(self.logfile)
