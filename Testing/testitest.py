@@ -1,6 +1,7 @@
 from plot.plotting import *
 from plot.utils import *
 from vision.marker_detection import *
+from vision.capture import record_video
 from testcase_main import *
 
 # run1 = get_all_paths('logs/slip_log_2025-11-24_15-52-19plastic_80hz.csv')
@@ -13,17 +14,17 @@ run3 = get_all_paths('logs/robot/robot_log_2025-11-23_19-50-44plastic_bad_contac
 # t0 = "2025-12-08_11-11-35"
 # t1 = t=0
 
-t0 = "2025-12-08_16-24-36"
-t1 = "2025-12-08_16-24-37"
+t0 = "2025-12-08_16-40-25"
+t1 = "2025-12-08_16-40-26"
 run = get_all_paths(f"logs/slip/slip_log_{t0}sync_with_cam.csv")
 markers = get_all_markers(f"logs/marker/marker_4_log{t1}.csv")
 
 
-plot_vid_slip(run.slip, markers.m1, markers.m2, markers.m3, markers.m4, markers.time)
-# compare_slip_time(run.slip)
+# plot_vid_slip(run.slip, markers.m1, markers.m2, markers.m3, markers.m4, markers.time)
+# compare_slip_time(run.slip)q
 
-# test_detection()
-
+test_detection()
+# record_video("Silicon")
 
 
 # plot_hist_sensors_robot(file_load=run2.load, file_robot=run2.robo, file_slip=run2.slip)
