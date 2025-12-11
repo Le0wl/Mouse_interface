@@ -7,13 +7,13 @@ COLUMNS = {'slip': ['Timestamp','Arduino_Time', 'contact', 'delta_X', 'delta_Y']
            'loadcell': ["Timestamp", "Shear_Force"]} #normal forche after if there
 
 #connections
-CONNECTIONS = {'slip' : False, 'robot': False, 'loadcell': False, 'camera': True }
+CONNECTIONS = {'slip' : True, 'robot': False, 'loadcell': False, 'camera': True }
 
 SAVE_PATH = 'logs'
 LOG_TIME = 20           # maximum logtime before terminating in seconds
 PLOT = False
 UR_IP = '169.254.20.10'
-SURFACE = 'table_white'
+SURFACE = 'table'
 CAM_FPS = 180.0
 SHOW = True
 MOVE = [                        # list of relative waypoints
@@ -37,5 +37,5 @@ MOVE = [                        # list of relative waypoints
 # full flat (perfect contact), 
 # contacting but at a slight angle (imperfect contact), 
 # on the following surfaces:
-# paper, plastic, fabric, silicon (EF30), semi-transparent material 
+# wood, paper, PLA, fabric, silicon 
 

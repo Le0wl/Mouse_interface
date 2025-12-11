@@ -130,12 +130,6 @@ def plot_xyDeltas(file):
     plt.savefig("figs/deltapath.png")
     plt.show()
 
-def plot_shear(df_load, mode = None):
-    if mode == 'deriv':
-            plt.plot(df_load['Time_rel'],df_load['deriv'], label = 'derviative Shear [1 N/s]', color = 'coral')
-            df_load['slip'] = df_slip['mvt'].apply(lambda x: 1 if x >slip_thresh_mouse else 0)
-
-    plt.plot(df_load['Time_rel'],df_load['Shear_Force']/1000*9.81 * 10, label = 'LC Shear Force [0.1 N]', color = 'orange')
 
 def plot_lc(df_load):
     plt.scatter(df_load['Time_rel'],df_load['Shear_Force']/1000*9.81 * 10, label = 'LC Shear Force [0.1 N]', color = 'orange', marker= '+')
@@ -252,9 +246,12 @@ def plot_marker(df):
 
     # plt.plot(df['Timestamp'],df['dx0']/10, label = 'marker arm1 horizonal pos', color = 'pink')
     # plt.plot(df['Timestamp'],df['dx1']/10, label = 'marker arm2 horizonal pos', color = 'blue')
-    plt.plot(df['Timestamp']+pd.to_timedelta(270, unit= "ms"),df['dx2']/10, label = 'marker sled horizonal pos', color = 'orange')
+    plt.plot(df['Timestamp']+pd.to_timedelta(270, unit= "ms"),df['dx2']/10, label = 'marker sled horizonal pos [cm]', color = 'orange')
+    plt.plot(df['Timestamp']+pd.to_timedelta(270, unit= "ms"),df['dy2']/10, label = 'marker sled vertical pos [cm]', color = 'cyan')
     # plt.plot(df['Timestamp'],df['dx3']/10, label = 'marker static horizonal pos', color = 'violet')
     # plt.plot(df['Timestamp'],df['speed']/100, label = 'sled speed horizonal', color = 'pink')
+    # plt.plot(df['Timestamp']+pd.to_timedelta(270, unit= "ms"),df['contact']*4, label = 'sled slip horizonal', color = 'violet')
+
     plt.plot(df['Timestamp']+pd.to_timedelta(270, unit= "ms"),df['slip']*6, label = 'sled slip horizonal', color = 'blue')
 
 def compare_slip_time(filename):

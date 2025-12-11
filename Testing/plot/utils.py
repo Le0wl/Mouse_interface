@@ -6,8 +6,8 @@ import os.path
 
 contact_thresh = 50
 slip_thresh_mouse = 0.3
-slip_thresh_cam = 50
-# slip_thresh_ls = 1
+slip_thresh_cam = 10
+contact_thresh_cam = 4
 window = 5
 
 class Paths(NamedTuple):
@@ -224,15 +224,22 @@ def marker_panda(*files):
             on="frame", how="left"
         )
     df = merged.copy()
+    #distance between marker 1 and 2 is 29mm
+    scale = 29 / np.sqrt(((df["x0"]-df["x1"]).mean())**2 + ((df["y0"]-df["y1"]).mean())**2)
+    
+
     df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
     start = df.index.get_loc(df['x3'].first_valid_index())
     df.drop(index=df.index[:start], axis=0, inplace=True)
     # static point x3,y3 added to the frame then setup is ready
 
-    for i in range(len(df_markers)):  
-        df[f"dx{i}"] = df[f"x{i}"] - get_starting_pos(df[f"x{i}"])
+    for i in range(len(df_markers)):
+        df[f"sx{i}"] = df[f"x{i}"] * scale
+        df[f"sy{i}"] = df[f"y{i}"] * scale * (-1) #invert it because pixels are numbered top down
+        df[f"dx{i}"] = df[f"sx{i}"] - get_starting_pos(df[f"sx{i}"])
+        df[f"dy{i}"] = df[f"sy{i}"] - get_starting_pos(df[f"sy{i}"])
     
-    df= get_speed(df)
+    df= get_cam_slip(df)
 
     df = df.reset_index()
     df.to_csv("test", index=False)
@@ -245,17 +252,17 @@ def get_starting_pos(col):
     return start_pos
 
 
-def get_speed(df):
+def get_cam_slip(df):
     col = df["dx2"].copy()
     col.index = pd.to_datetime(df["Timestamp"])
     col_smooth = col.interpolate(method='time')
     col_smooth = col_smooth.rolling(window).mean()
-    df = df.set_index("Timestamp")  # key fix
-
+    df = df.set_index("Timestamp")  
+    df["contact"] = (df["dy2"] < contact_thresh_cam).astype(bool)
     dt = col_smooth.index.to_series().diff().dt.total_seconds()
     df["speed"] = col_smooth.diff() / dt
-
-    df["slip"] = (np.abs(df["speed"]) > slip_thresh_cam).astype(int)
+    df["slip"] = (np.abs(df["speed"]) > slip_thresh_cam).astype(bool)
+    df["slip"] = (df["slip"] & df["contact"]).astype(int)
     return df
 
 def slip_detection(df):

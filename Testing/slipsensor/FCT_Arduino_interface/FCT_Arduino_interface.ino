@@ -63,30 +63,6 @@ void setup() {
 }
 
 void loop() {
-  // if (!logStart && Serial.available()) {
-  //       char cmd = Serial.read();
-  //       if (cmd == '1') {  // PC requests sync
-  //           bool confirmed = false;
-  //           while (!confirmed) {
-  //               unsigned long t = micros();
-  //               int hello = 101;
-  //               Serial.print(hello);
-  //               Serial.print(",");
-  //               Serial.println(t);
-
-  //               delay(10); // small delay to avoid flooding USB
-
-  //               // check for confirmation
-  //               if (Serial.available()) {
-  //                   char ack = Serial.read();
-  //                   if (ack == '2') {  // PC confirms sync
-  //                       confirmed = true;
-  //                       logStart = true;
-  //                   }
-  //               }
-  //           }
-  //       }
-  //   }
   if(logStart){
     uint8_t motion = readRegister(MOTION_STATUS); // read motion status register | needs to be read for deltas to update
     if (motion == 0xFF){
@@ -188,71 +164,6 @@ bool contactDectect(void){
 }
 
 
-// extra declarations:
-
-// const int window_size = 5;
-
-// int static x_readings[window_size] = {0};
-// int static y_readings[window_size] = {0};
-// int static c_readings[window_size] = {0};
-// int static m_readings[window_size] = {0}
-// int static readIndex  = 0;
-// long static total_x = 0;
-// long static total_y = 0;
-// long static total_c = 0;
-// long static total_m = 0;
-
-
-// extra things that are no longer in the loop():
-
-  // uint8_t mvt = sqrt(delta_y*delta_y + delta_x*delta_x);
-  // long smooth_x;
-  // long smooth_y;
-  // long smooth_c;
-  // smooth (delta_x, delta_y, (int)contact, &smooth_x, &smooth_y, &smooth_c);
-
-    // Serial.print(",");
-    // if (DEBUG || PLOT_HERE) Serial.print("\n mouvement:");
-    // Serial.print(mvt);
-    // Serial.print(",");
-    // if (DEBUG || PLOT_HERE) Serial.print(" slip:");
-    // if (mvt > SLIP_THRESHOLD){        //slip test
-    //   Serial.println(true);
-    // }
-    // else{
-    //   Serial.println(false);
-    // }
-
-
-// extra funcitons:
-
-// void smooth (int x, int y, int c, long* avg_x, long* avg_y, long* avg_c){
-//   *avg_x = moving_avg(x, 'x');
-//   *avg_y = moving_avg(y, 'y');
-//   *avg_c = moving_avg(c, 'c');
-//   readIndex += 1;
-//   if (readIndex >= window_size){readIndex = 0;}
-// }
-
-// long moving_avg(int value, char var){
-//   long avg;
-//   long * total;
-//   int* readings;
-//   switch(var){
-//     case 'x': total = &total_x; readings = x_readings; break;
-//     case 'y': total = &total_y; readings = y_readings; break;
-//     case 'c': total = &total_c; readings = c_readings; break;
-//     case 'm': total = &total_m; readings = m_readings; break;
-//     default:
-//       Serial.println("\n Moving average error, no buffer for ");
-//       return 0;
-//   }
-//   *total -= readings[readIndex];
-//   readings[readIndex] = value;
-//   *total +=  readings[readIndex];
-//   avg = *total / window_size;
-//   return avg;
-// }
  
 
 
