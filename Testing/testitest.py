@@ -9,10 +9,7 @@ from config import *
 t = "2025-12-12_10-46-40"
 run, markers = get_all_paths(f"logs/slip/slip_log_{t}{SURFACE}.csv")
 
-plot_vid_slip(run.slip, markers.m1, markers.m2, markers.m3, markers.m4, markers.time)
-# compare_slip_time(run.slip)
-# test_detection()
-# main()
+
 # record_video("Silicon")
 
 
