@@ -3,10 +3,11 @@ import numpy as np
 import datetime as dt
 from typing import NamedTuple
 import os.path
+import re
 
 contact_thresh = 50
 slip_thresh_mouse = 0.3
-slip_thresh_cam = 10
+slip_thresh_cam = 15
 contact_thresh_cam = 4
 window = 5
 
@@ -139,7 +140,7 @@ def get_all_paths(path):
         path_ld = path_sl.replace("slip/sensor", "loadcell/load")
         path_ro = path_sl.replace("slip/sensor", "robot/robot")
     else:
-        print("ERROR: no valid path")
+        print("ERROR: no valid sensor path")
         return
     
     if not os.path.isfile(path_sl):
@@ -149,7 +150,18 @@ def get_all_paths(path):
     if not os.path.isfile(path_ro):
         path_ro = None
     all_paths = Paths(path_sl, path_ld, path_ro)
-    return all_paths
+
+    match = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', path)
+    start_time0 = dt.datetime.strptime(match.group(), '%Y-%m-%d_%H-%M-%S')
+    start_time1 = start_time0 + pd.Timedelta(1, unit="s")
+    path_ma = f"logs/marker/marker_4_log{start_time0.strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+
+    if os.path.isfile(path_ma):
+        markers = get_all_markers(path_ma)
+    else: 
+        path_ma = f"logs/marker/marker_4_log{start_time1.strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+        markers = get_all_markers(path_ma)
+    return all_paths, markers
 
 def get_all_markers(path):
     if "_1_" in path:
@@ -177,7 +189,7 @@ def get_all_markers(path):
         m4 = path
         time = path.replace("marker_4", "time")
     else:
-        print("ERROR: no valid path")
+        print("ERROR: no valid marker path")
         return
     
     if not os.path.isfile(m1):
@@ -201,8 +213,6 @@ def preprocessing(file_slip = None, file_robot= None, file_load = None):
     return df_slip, df_load, df_robot 
 
 
-
-
 # aligning frames and time
 def marker_panda(*files):
     dfs = []
@@ -224,10 +234,9 @@ def marker_panda(*files):
             on="frame", how="left"
         )
     df = merged.copy()
-    #distance between marker 1 and 2 is 29mm
+    #distance between marker 1 and 2 is 29mm, for transforming pixelcounts to mm
     scale = 29 / np.sqrt(((df["x0"]-df["x1"]).mean())**2 + ((df["y0"]-df["y1"]).mean())**2)
     
-
     df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
     start = df.index.get_loc(df['x3'].first_valid_index())
     df.drop(index=df.index[:start], axis=0, inplace=True)

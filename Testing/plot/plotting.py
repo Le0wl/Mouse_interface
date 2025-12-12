@@ -142,12 +142,6 @@ def plot_slip(df_slip):
     plt.plot(df_slip['Sync_Time'], df_slip['delta_X'], label='delta_X', color = 'teal')
     plt.plot(df_slip['Sync_Time'], df_slip['delta_Y'], label='delta_Y', color = 'lightblue')
 
-def plot_mvt(df_slip):
-    df_slip = slip_detection(df_slip)
-    # plt.plot(df_slip['Time'],df_slip['contact']*5, label = 'contact', color = 'g')
-    plt.plot(df_slip['Sync_Time'], df_slip['slip']*5, label='slip detected', color = 'red')
-    plt.plot(df_slip['Sync_Time'], df_slip['mvt'], label='movement detected', color = 'g')
-
 def plot_robot(df_robot):
     plt.plot(df_robot['Time_rel'],df_robot['TCP_x']*100, label = 'arm pos in x [cm]', color = 'm')
     plt.plot(df_robot['Time_rel'],df_robot['TCP_y']*100, label = 'arm pos in y [cm]', color = 'pink')
@@ -227,32 +221,25 @@ def marker_path(*files):
     plt.savefig("figs/path_mm.png")
     plt.show()
 
+def plot_mvt(df_slip):
+    df_slip = slip_detection(df_slip)
+    plt.plot(df_slip['Sync_Time'], df_slip['slip']*2, label='slip detected', color = 'red')
+    plt.plot(df_slip['Sync_Time'], df_slip['mvt'], label='movement detected', color = 'g')
 
 def plot_vid_slip(slip_path, m1_path,  m2_path,  m3_path,  m4_path, mtime_path):
     df_slip, df_marker= vid_synch(slip_path, m1_path,  m2_path,  m3_path,  m4_path, mtime_path) 
     plt.figure(figsize=(12,4))
-    # plot_slip(df_slip)
     plot_marker(df_marker)
     plot_mvt(df_slip)
     plt.grid()
-    plt.legend()
+    plt.ylim(-10,10)
+    plt.legend(loc="lower right")
     plt.show()
 
 def plot_marker(df):
-    # plt.scatter(df['Timestamp'],df['dx0']/10, label = 'marker arm1 in x', color = 'pink', marker='+')
-    # plt.scatter(df['Timestamp'],df['dx1']/10, label = 'marker arm2 in x', color = 'blue', marker='+')
-    # plt.scatter(df['Timestamp'],df['dx2']/10, label = 'marker sled in x', color = 'orange', marker='+')
-    # plt.scatter(df['Timestamp'],df['dx3']/10, label = 'marker static in x', color = 'violet', marker='+')
-
-    # plt.plot(df['Timestamp'],df['dx0']/10, label = 'marker arm1 horizonal pos', color = 'pink')
-    # plt.plot(df['Timestamp'],df['dx1']/10, label = 'marker arm2 horizonal pos', color = 'blue')
     plt.plot(df['Timestamp']+pd.to_timedelta(270, unit= "ms"),df['dx2']/10, label = 'marker sled horizonal pos [cm]', color = 'orange')
     plt.plot(df['Timestamp']+pd.to_timedelta(270, unit= "ms"),df['dy2']/10, label = 'marker sled vertical pos [cm]', color = 'cyan')
-    # plt.plot(df['Timestamp'],df['dx3']/10, label = 'marker static horizonal pos', color = 'violet')
-    # plt.plot(df['Timestamp'],df['speed']/100, label = 'sled speed horizonal', color = 'pink')
-    # plt.plot(df['Timestamp']+pd.to_timedelta(270, unit= "ms"),df['contact']*4, label = 'sled slip horizonal', color = 'violet')
-
-    plt.plot(df['Timestamp']+pd.to_timedelta(270, unit= "ms"),df['slip']*6, label = 'sled slip horizonal', color = 'blue')
+    plt.plot(df['Timestamp']+pd.to_timedelta(270, unit= "ms"),df['slip']*4, label = 'sled slip horizonal', color = 'blue')
 
 def compare_slip_time(filename):
     df = pd.read_csv(filename)

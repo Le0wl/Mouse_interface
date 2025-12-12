@@ -48,13 +48,13 @@ def serial_logger(name, filename, log_ready_event, timing, timing_lock, stop_eve
         print(f"{name} log failure:", e)
 
         
-def main():
+def main_thread():
     # initiation of all the things
-    dt = datetime.datetime
+    start_time_str = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     os.makedirs(SAVE_PATH, exist_ok=True)
-    filename_slip = os.path.join(SAVE_PATH, f"slip/slip_log_{dt.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
-    filename_load = os.path.join(SAVE_PATH, f"loadcell/load_log_{dt.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
-    filename_robo = os.path.join(SAVE_PATH, f"robot/robot_log_{dt.now().strftime('%Y-%m-%d_%H-%M-%S')}{SURFACE}.csv")
+    filename_slip = os.path.join(SAVE_PATH, f"slip/slip_log_{start_time_str}{SURFACE}.csv")
+    filename_load = os.path.join(SAVE_PATH, f"loadcell/load_log_{start_time_str}{SURFACE}.csv")
+    filename_robo = os.path.join(SAVE_PATH, f"robot/robot_log_{start_time_str}{SURFACE}.csv")
     ur, thread_robo = init_robot()
     
     # thread stuff 
@@ -102,42 +102,33 @@ def main():
         if (CONNECTIONS['camera']):
             camera_thread.join() 
     
-        to_plot = []
         # prettyfy data 
         if ('slip_start_log'in timing):
             sync_arduino_clock(filename_slip)
             print(f"Finished mouse log. File: {filename_slip}")
-            to_plot.append(filename_slip)
         else:
             print('no slip logging happened')
 
         if thread_robo:
             robot_data_pross(filename_robo)
             print(f"Finished robot log. File: {filename_robo}") 
-            to_plot.append(filename_robo)       
         else:
             print('no robot logging happened')
 
         if ('loadcell_start_log'in timing):
             sync_arduino_clock(filename_load)
             print(f"Finished load log. File: {filename_load}")
-            to_plot.append(filename_load)
         else:
             print('no load logging happened')
 
         if (CONNECTIONS['camera']):
             files = marker_logging(video_file[0])
             print('marker logging finished')
-            for file in files:
-                to_plot.append(file)
 
-        if PLOT:
-            plot_vid_slip(*to_plot)
-            # plot_hist_sensors_robot(*to_plot)
     else: 
         print("ERROR: Logging setup did not complete within 10 seconds. Terminating.")
         stop_event.set()
-
+    return start_time_str
 
 # def slip_data_pross(filename_slip, timing):
 #             df = pd.read_csv(filename_slip)
@@ -218,4 +209,7 @@ def sync_arduino_clock(filename):
 
 
 if __name__ == '__main__':
-    main()
+    test_detection()
+    start_time = main_thread()
+    run, markers = get_all_paths(f"logs/slip/slip_log_{start_time}{SURFACE}.csv")
+    plot_vid_slip(run.slip, markers.m1, markers.m2, markers.m3, markers.m4, markers.time)
