@@ -5,7 +5,7 @@ from typing import NamedTuple
 import os.path
 import re
 
-contact_thresh = 50
+contact_thresh = 0
 slip_thresh_mouse = 0.3
 slip_thresh_cam = 15
 contact_thresh_cam = 4
@@ -121,7 +121,11 @@ def arm_speed(df_robot):
     deri_y = diff_y/dt
     deri_z = diff_z/dt
     return deri_x, deri_y, deri_z
-    
+
+def get_all_paths2(path):
+    path
+    "data_analysis/2025-12-11_18-13-paper/marker_1_log2025-12-11_18-13-33.csv"
+
 def get_all_paths(path):
     if "slip/slip" in path:
         path_sl = path
@@ -283,3 +287,8 @@ def slip_detection(df):
     df['slip'] = df['slip'] & df['contact']
     return df
   
+def get_contact(df):
+    df['contact'] = df['contact'].apply(lambda x: 1 if x >contact_thresh else 0)
+    df['contact'] = df['contact'].rolling(window).mean() 
+    df['contact'] = df['contact'].apply(lambda x: True if x >=1 else False)
+    return df['contact']

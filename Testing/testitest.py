@@ -9,6 +9,7 @@ from config import *
 t = "2025-12-12_10-46-40"
 run, markers = get_all_paths(f"logs/slip/slip_log_{t}{SURFACE}.csv")
 
+plot_hist_slip("logs/slip/slip_log_2025-12-16_14-08-28on finger.csv")
 
 # record_video("Silicon")
 

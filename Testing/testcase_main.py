@@ -212,4 +212,7 @@ if __name__ == '__main__':
     test_detection()
     start_time = main_thread()
     run, markers = get_all_paths(f"logs/slip/slip_log_{start_time}{SURFACE}.csv")
-    plot_vid_slip(run.slip, markers.m1, markers.m2, markers.m3, markers.m4, markers.time)
+    if CONNECTIONS["camera"]:
+        plot_vid_slip(run.slip, markers.m1, markers.m2, markers.m3, markers.m4, markers.time)
+    else:
+        plot_hist_slip(run.slip)

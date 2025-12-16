@@ -76,14 +76,14 @@ def plot_average(file_slip, file_robot, file_load):
 # plot histogram only sensor
 def plot_hist_slip(file):
     df_log = pd.read_csv(file)
-    df_log['Time'] = pd.to_datetime(df_log['Time'], format='%Y-%m-%d %H:%M:%S.%f')
-    df_log['Time_rel'] = (df_log['Time'] - df_log['Time'].iloc[0]).dt.total_seconds()
+    df_log['Sync_Time'] = pd.to_datetime(df_log['Sync_Time'], format='%Y-%m-%d %H:%M:%S.%f')
     plt.figure(figsize=(8,4))
-    plot_mvt(df_log)
+    plot_slip(df_log)
     plt.xlabel('Time (s)')
     plt.ylabel('Delta Values')
     plt.title('x and y deltas over time')
     plt.grid(True)
+    plt.ylim(-12,12)
     plt.legend()
     plt.savefig("figs/deltahist_sensor.png")
     plt.show()
@@ -136,8 +136,7 @@ def plot_lc(df_load):
     plt.scatter(df_load['Time_rel'],df_load['Normal_Force']/1000*9.81, label = 'LC Normal Force [1 N]', color = 'coral', marker= '+')
 
 def plot_slip(df_slip):
-    # plt.plot(df_slip['Time_rel'],df_slip['contact']*5, label = 'contact', color = 'lime')
-    df_slip['contact'] = df_slip['contact'].apply(lambda x: 1 if x >contact_thresh else 0)
+    df_slip['contact'] = get_contact(df_slip)
     plt.plot(df_slip['Sync_Time'],df_slip['contact']*5, label = 'contact', color = 'g')
     plt.plot(df_slip['Sync_Time'], df_slip['delta_X'], label='delta_X', color = 'teal')
     plt.plot(df_slip['Sync_Time'], df_slip['delta_Y'], label='delta_Y', color = 'lightblue')
@@ -235,6 +234,8 @@ def plot_vid_slip(slip_path, m1_path,  m2_path,  m3_path,  m4_path, mtime_path):
     plt.ylim(-10,10)
     plt.legend(loc="lower right")
     plt.show()
+    plt.savefig("figs/slip_.png")
+
 
 def plot_marker(df):
     plt.plot(df['Timestamp']+pd.to_timedelta(270, unit= "ms"),df['dx2']/10, label = 'marker sled horizonal pos [cm]', color = 'orange')

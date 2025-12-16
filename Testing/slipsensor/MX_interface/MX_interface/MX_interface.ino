@@ -37,12 +37,12 @@
 
 #define IMG_BRIGHT 0x17
 
-#define DEBUG true
+#define DEBUG false
 #define PLOT_HERE false
 #define SLIP_THRESHOLD 5
 #define CONTACT_THRESHOLD 0x00
 #define FREQUENCY 500 // between 1 and 670 
-#define FCT_ID 0x30
+#define MX_ID 0x30
 
 const int SCLK = 8;
 const int SDIO = 4;
@@ -68,11 +68,20 @@ void setup() {
   pinMode (SCLK, OUTPUT);
   mouseInit();
   byte prodId1 = readRegister(PROD_ID1);
-  logStart = true;
+  if (prodId1==MX_ID){
+      logStart = true;
+    }
   if (DEBUG) {
     Serial.print("Device ID: 0x");
-    Serial.println(prodId1, HEX);
-    Serial.println((prodId1==FCT_ID)?"Device OK":"Unknown Device"); // checks for product ID 
+    Serial.print(prodId1, HEX);
+    Serial.print(" we want: 0x");
+    Serial.println(MX_ID, HEX);
+    if (prodId1==MX_ID){
+      Serial.println("Device OK");
+    }
+    else{
+      Serial.println("Unknown Device");
+    }
     delay(1000);
   }
 }
@@ -81,43 +90,53 @@ void loop() {
   if(logStart){
     uint8_t motion = readRegister(MOTION_STATUS); // read motion status register | needs to be read for deltas to update
     if (motion == 0xFF){
-      Serial.print("Bad connection ");
-      printMode();
+      uint8_t mode = readRegister(OP_MODE);
+      if (mode == 0xFF) Serial.println("Bad connection");
+      else printMode();
+      delay(500);
     }
-  //   if (DEBUG){
-  //     if (motion & 0x80) Serial.print("Moved! ");   //new test for moved used to be "if(motion==0x81)"
-  //     else Serial.print("no mouvement ");
-  //     // delay(500);
-  //   }
-  //   int8_t delta_x =(int8_t) readRegister(DEL_X); // read delta x register | signed ints
-  //   int8_t delta_y = (int8_t) readRegister(DEL_Y); // read delta y register
-  //   uint8_t quali = readRegister(IMG_QUALITY);
-  //   // unsigned long t = micros();
-  //   // Serial.print(t); Serial.print(",");
-  //   // if (DEBUG || PLOT_HERE) Serial.print("\n contact:");
-  //   // Serial.print(quali); Serial.print(",");
-  //   // if (DEBUG || PLOT_HERE) Serial.print("\n delta X:");
-  //   // Serial.print(delta_x);  Serial.print(",");
-  //   // if (DEBUG || PLOT_HERE) Serial.print("\n delta Y:");
-  //   // Serial.println(delta_y);
-  //   bool slip = slip_detection(quali, delta_x, delta_y);
-  //   if (slip){
-  //     digitalWrite(LED,HIGH);
-  //   }
-  //   else{
-  //     digitalWrite(LED,LOW);
-  //   }
-  //   Serial.println(slip);
-  //   int period = 1000000/FREQUENCY;
-  //   int delay = period - 1500; // approximate us if a cycle without added delay
-  //   if (delay > 0){
-  //     delayMicroseconds(delay); // added delay to lower the frequency
-  //   } 
+    else{
+      if (DEBUG){
+        if (motion & 0x80) Serial.print("Moved! ");   //new test for moved used to be "if(motion==0x81)"
+        else Serial.print("no mouvement ");
+        delay(500);
+      }
+      int8_t delta_x =(int8_t) readRegister(DEL_X); // read delta x register | signed ints
+      int8_t delta_y = (int8_t) readRegister(DEL_Y); // read delta y register
+      uint8_t quali = readRegister(IMG_QUALITY);
+      unsigned long t = micros();
+      Serial.print(t); Serial.print(",");
+      if (DEBUG || PLOT_HERE) Serial.print("\n contact:");
+      Serial.print(quali); Serial.print(",");
+      if (DEBUG || PLOT_HERE) Serial.print("\n delta X:");
+      Serial.print(delta_x);  Serial.print(",");
+      if (DEBUG || PLOT_HERE) Serial.print("\n delta Y:");
+      Serial.println(delta_y);
+      bool slip = slip_detection(quali, delta_x, delta_y);
+      if (slip){
+        digitalWrite(LED,HIGH);
+      }
+      else{
+        digitalWrite(LED,LOW);
+      }
+      // Serial.println(slip);
+    }
+    int period = 1000000/FREQUENCY;
+    int delay = period - 1500; // approximate us if a cycle without added delay
+    if (delay > 0){
+      delayMicroseconds(delay); // added delay to lower the frequency
+    } 
   }
-  // else{
-  //   Serial.println("no init");
-  //   delay(1000);
-  // } 
+  else{
+    Serial.println("no init");
+    delay(1000);
+    Serial.println("reinitialize");
+    mouseInit();
+    byte prodId1 = readRegister(PROD_ID1);
+    if (prodId1==MX_ID){
+        logStart = true;
+    }
+  } 
 }
 
 void mouseInit(void){ // function to initialize optical sensor.
